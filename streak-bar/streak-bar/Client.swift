@@ -7,10 +7,11 @@
 
 import Foundation
 import Alamofire
+import Defaults
 
 public class Client {
     
-    let githubUsername = "streetturtle"
+    @Default(.githubUsername) var githubUsername
     @FromKeychain(.githubToken) var githubToken
 
     func getContributions(from: Date, completion: @escaping (Result<[ContributionWeek], ClientError>) -> Void) {
@@ -47,7 +48,7 @@ public class Client {
         var variables: [String: Any] = [:]
 
         // Adding values to the dictionary
-        variables["userName"] = "streetturtle"
+        variables["userName"] = githubUsername
         variables["from"] = formatDateToCustomString(from)
         variables["to"] = formatDateToCustomString(.now)
 

@@ -19,7 +19,7 @@ struct StatusItemView: View {
                     VStack(alignment: .leading, spacing: 1) {
                         ForEach(week.contributionDays, id:\.date) { day in
                             Rectangle()
-                                .fill(Color(hex: day.color))
+                                .fill(Color(hex: day.color).opacity(day.color == "#ebedf0" ? 0 : 1))
                                 .frame(width: 2, height: 2)
                         }
                     }

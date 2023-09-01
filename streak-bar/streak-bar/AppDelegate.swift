@@ -43,11 +43,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 //        redrawBarItem()
         if let button = statusBarItem.button {
             button.frame = NSRect(x: 0, y: 0, width: daysBefore/7*3 + 20, height: 22)
-            viewModel.getContributions()
+            
             let hostingView = NSHostingView(rootView: itemView)
             hostingView.frame = NSRect(x: 0, y: 0, width: daysBefore/7*3 + 20, height: 22) // Adjust the size as needed
             button.addSubview(hostingView)
             button.action = #selector(togglePopover(_:))
+            
+            viewModel.getContributions()
         }
     }
 
