@@ -11,11 +11,13 @@ struct ContributionDay: Codable, Hashable {
     let contributionCount: Int
     let date: String
     let color: String
+    let contributionLevel: ContributionLevel
     
     enum CodingKeys: String, CodingKey {
         case contributionCount
         case date
         case color
+        case contributionLevel
     }
 }
 
@@ -72,5 +74,12 @@ struct JsonResponse: Codable {
     enum CodingKeys: String, CodingKey {
         case data
     }
-    
+}
+
+enum ContributionLevel: String, Codable {
+    case FIRST_QUARTILE
+    case SECOND_QUARTILE
+    case THIRD_QUARTILE
+    case FOURTH_QUARTILE
+    case NONE
 }

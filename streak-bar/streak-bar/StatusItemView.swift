@@ -6,40 +6,26 @@
 //
 
 import SwiftUI
+import Defaults
 
 struct StatusItemView: View {
     
     @StateObject var viewModel: ViewModel
-
+    @Default(.theme) var theme
+    @Default(.borders) var borders
+    @Default(.transparency) var transparency
+    
     var body: some View {
-        HStack(spacing: 1) {
-            
-            HStack(alignment: .top, spacing: 1) {
-                ForEach(viewModel.contributions, id:\.self) { week in
-                    VStack(alignment: .leading, spacing: 1) {
-                        ForEach(week.contributionDays, id:\.date) { day in
-                            Rectangle()
-                                .fill(Color(hex: day.color).opacity(day.color == "#ebedf0" ? 0 : 1))
-                                .frame(width: 2, height: 2)
-                        }
+        HStack(alignment: .top, spacing: borders ? 1 : 0) {
+            ForEach(viewModel.contributions, id:\.self) { week in
+                VStack(alignment: .leading, spacing:  borders ? 1 : 0) {
+                    ForEach(week.contributionDays, id:\.date) { day in
+                        Rectangle()
+                            .fill(Theme.themes[theme]![day.contributionLevel]!.opacity(day.contributionLevel == .NONE && !transparency ? 0 : 1))
+                            .frame(width: borders ? 2 : 3, height: borders ? 2 : 3)
                     }
                 }
             }
-            
-            
-            
-            //            Grid(horizontalSpacing: 1, verticalSpacing: 1) {
-            //                ForEach(viewModel.contributions, id:\.self) { week in
-            //                    GridRow {
-            //                        ForEach(week.contributionDays, id:\.self) { day in
-            //                            Rectangle()
-            //                                .fill(Color(hex: day.color))
-            //                                .frame(width: 2, height: 2)
-            //                        }
-            //                    }
-            //                }
-            //            }
-            
         }
     }
 }

@@ -22,6 +22,7 @@
 		7656FE032AA18DB700D379A5 /* Settings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7656FE022AA18DB700D379A5 /* Settings.swift */; };
 		7656FE062AA18DFC00D379A5 /* Keychain.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7656FE052AA18DFC00D379A5 /* Keychain.swift */; };
 		7656FE092AA18E0B00D379A5 /* KeychainAccess in Frameworks */ = {isa = PBXBuildFile; productRef = 7656FE082AA18E0B00D379A5 /* KeychainAccess */; };
+		7656FE0B2AA2CDA000D379A5 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7656FE0A2AA2CDA000D379A5 /* Theme.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -39,6 +40,7 @@
 		76240EED2AA183850098ADB7 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		7656FE022AA18DB700D379A5 /* Settings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Settings.swift; sourceTree = "<group>"; };
 		7656FE052AA18DFC00D379A5 /* Keychain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Keychain.swift; sourceTree = "<group>"; };
+		7656FE0A2AA2CDA000D379A5 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -86,6 +88,7 @@
 				76240EE92AA179A40098ADB7 /* ViewModel.swift */,
 				76240EEB2AA17CFB0098ADB7 /* ColorExtension.swift */,
 				76240EED2AA183850098ADB7 /* ContentView.swift */,
+				7656FE0A2AA2CDA000D379A5 /* Theme.swift */,
 			);
 			path = "streak-bar";
 			sourceTree = "<group>";
@@ -183,6 +186,7 @@
 				76240ED42AA02A830098ADB7 /* ViewController.swift in Sources */,
 				76240EEE2AA183850098ADB7 /* ContentView.swift in Sources */,
 				76240EE32AA176740098ADB7 /* Client.swift in Sources */,
+				7656FE0B2AA2CDA000D379A5 /* Theme.swift in Sources */,
 				76240EE82AA177CF0098ADB7 /* Dto.swift in Sources */,
 				76240EEA2AA179A40098ADB7 /* ViewModel.swift in Sources */,
 				7656FE032AA18DB700D379A5 /* Settings.swift in Sources */,
@@ -328,7 +332,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 8FPQFYYR9S;
+				DEVELOPMENT_TEAM = UV3HUS49VJ;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
@@ -355,7 +359,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 8FPQFYYR9S;
+				DEVELOPMENT_TEAM = UV3HUS49VJ;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";

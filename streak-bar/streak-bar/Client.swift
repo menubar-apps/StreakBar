@@ -37,6 +37,7 @@ public class Client {
                     contributionCount
                     date
                     color
+                    contributionLevel
                   }
                 }
               }

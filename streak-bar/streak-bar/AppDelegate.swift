@@ -34,7 +34,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         
         let popover = NSPopover()
         popover.contentSize = NSSize(width: 400, height: 600)
-        popover.behavior = .transient
+        popover.behavior = .semitransient
         popover.contentViewController = NSHostingController(rootView: contentView)
         self.popover = popover
         
@@ -45,7 +45,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             button.frame = NSRect(x: 0, y: 0, width: daysBefore/7*3 + 20, height: 22)
             
             let hostingView = NSHostingView(rootView: itemView)
-            hostingView.frame = NSRect(x: 0, y: 0, width: daysBefore/7*3 + 20, height: 22) // Adjust the size as needed
+            hostingView.frame = button.frame
             button.addSubview(hostingView)
             button.action = #selector(togglePopover(_:))
             
@@ -80,7 +80,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 self.viewModel.getContributions()
             } else {
 //                self.viewModel.popupIsShown.toggle()
-                self.viewModel.getContributions()
+//                self.viewModel.getContributions()
                 redrawBarItem()
 
                 self.popover.show(relativeTo: button.bounds, of: button, preferredEdge: NSRectEdge.minY)
