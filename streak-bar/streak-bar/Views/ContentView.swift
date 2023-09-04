@@ -21,15 +21,17 @@ struct ContentView: View {
             }
             .pickerStyle(.segmented)
             .frame(width: 150)
-            .border(.red)
             
             if favoriteColor == 0 {
+//                Text("asd")
+//                    .padding(20)
                 SettingsView(appDelegate: appDelegate)
             } else {
                 AboutView()
             }
         }
-        .border(.red)
+        .padding(.top, 16)
+        .frame(alignment: .top)
     }
 }
 

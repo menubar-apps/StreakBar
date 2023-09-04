@@ -13,7 +13,7 @@ struct AboutView: View {
     let currentVersion = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as! String
     
     var body: some View {
-        VStack {
+        VStack() {
             Image(nsImage: NSImage(named: "AppIcon")!)
                 .frame(height: 130)
             Text("Streak Bar").font(.title)
@@ -47,7 +47,7 @@ struct AboutView: View {
             }
         }
         .padding()
-//        .frame(minHeight: 400)
+        .frame(minHeight: 300)
     }
 }
 

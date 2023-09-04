@@ -26,7 +26,7 @@ struct SettingsView: View {
     var body: some View {
         VStack (alignment: .leading) {
             HStack(alignment: .center) {
-                Text("Username:").frame(width: 100, alignment: .trailing)
+                Text("Username:").frame(width: 90, alignment: .trailing)
                 TextField("Github username", text: $githubUsername)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                     .disableAutocorrection(true)
@@ -35,7 +35,7 @@ struct SettingsView: View {
             }
             
             HStack(alignment: .center) {
-                Text("ViewMode:").frame(width: 100, alignment: .trailing)
+                Text("ViewMode:").frame(width: 90, alignment: .trailing)
                 VStack(alignment: .leading) {
                     Picker("", selection: $viewMode, content: {
                         ForEach(ViewMode.allCases, id:\.self) { vm in
@@ -54,13 +54,15 @@ struct SettingsView: View {
             }
             
             HStack(alignment: .center) {
-                Text("\(viewMode.rawValue.capitalized)s before:").frame(width: 100, alignment: .trailing)
+                Text("\(viewMode.rawValue.capitalized)s before:").frame(width: 90, alignment: .trailing)
                 TextField("", value: $daysBefore, format: .number)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                     .disableAutocorrection(true)
                     .textContentType(.password)
-                    .frame(width: 50)
+                    .frame(width: 40)
                     .frame(alignment: .center)
+                    .multilineTextAlignment(.trailing)
+                
                 Button(action: {
                     appDelegate.redrawBarItem()
                 },
@@ -72,7 +74,7 @@ struct SettingsView: View {
             }
             
             HStack(alignment: .center) {
-                Text("Theme:").frame(width: 100, alignment: .trailing)
+                Text("Theme:").frame(width: 90, alignment: .trailing)
                 VStack(alignment: .leading) {
                     Picker("", selection: $theme, content: {
                         ForEach(Theme.themes.keys.sorted(by: <), id:\.self) {key in
@@ -101,21 +103,21 @@ struct SettingsView: View {
             
             if viewMode == .week {
                 HStack(alignment: .center) {
-                    Text("Borders:").frame(width: 100, alignment: .trailing)
+                    Text("Borders:").frame(width: 90, alignment: .trailing)
                     Toggle("", isOn: $borders)
                         .toggleStyle(.switch)
                 }
             }
             
             HStack(alignment: .center) {
-                Text("Transparency:").frame(width: 100, alignment: .trailing)
+                Text("Transparency:").frame(width: 90, alignment: .trailing)
                 Toggle("", isOn: !$transparency)
                     .toggleStyle(.switch)
             }
             
             
             HStack(alignment: .center) {
-                Text("GitHub Token:").frame(width: 100, alignment: .trailing)
+                Text("GitHub Token:").frame(width: 90, alignment: .trailing)
                 SecureField("", text: $githubToken)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                     .frame(width: 120)
@@ -131,6 +133,7 @@ struct SettingsView: View {
             }
             
         }.padding(20)
+            .frame(height: 360, alignment: .top)
     }
     
     var intProxy: Binding<Double>{
