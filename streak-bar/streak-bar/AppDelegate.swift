@@ -21,6 +21,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var hostingView: NSView?
 
     @Default(.daysBefore) var daysBefore
+    @Default(.viewMode) var viewMode
 
     var viewModel: ViewModel = ViewModel()
 
@@ -28,12 +29,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Insert code here to initialize your application
         NSApp.setActivationPolicy(.accessory)
 
-        contentView = ContentView()
+        contentView = ContentView(appDelegate: self)
         itemView =  StatusItemView(viewModel: self.viewModel)
         hostingView = NSHostingView(rootView: itemView)
         
         let popover = NSPopover()
-        popover.contentSize = NSSize(width: 400, height: 600)
+        popover.contentSize = NSSize(width: 0, height: 0)
         popover.behavior = .semitransient
         popover.contentViewController = NSHostingController(rootView: contentView)
         self.popover = popover
@@ -42,7 +43,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         
 //        redrawBarItem()
         if let button = statusBarItem.button {
-            button.frame = NSRect(x: 0, y: 0, width: daysBefore/7*3 + 20, height: 22)
+            let width = viewMode == .week ? daysBefore*3 + 20 : daysBefore * 22 + 20
+
+            button.frame = NSRect(x: 0, y: 0, width: width, height: 22)
             
             let hostingView = NSHostingView(rootView: itemView)
             hostingView.frame = button.frame
@@ -64,30 +67,33 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     
     func redrawBarItem() {
         if let button = statusBarItem.button {
-            button.frame = NSRect(x: 0, y: 0, width: daysBefore/7*3 + 20, height: 22)
-            viewModel.getContributions()
+            button.subviews.removeAll()
+            viewModel.contributions.removeAll()
+            
+            let width = viewMode == .week ? daysBefore*3 + 20 : daysBefore * 22 + 20
+            
+            button.frame = NSRect(x: 0, y: 0, width: width, height: 22)
+            
             let hostingView = NSHostingView(rootView: itemView)
-            hostingView.frame = NSRect(x: 0, y: 0, width: daysBefore/7*3 + 20, height: 22) // Adjust the size as needed
-//            button.addSubview(hostingView)
+            hostingView.frame = button.frame
+            button.addSubview(hostingView)
+            button.action = #selector(togglePopover(_:))
+            
+            viewModel.getContributions()
         }
     }
     
     @objc func togglePopover(_ sender: AnyObject?) {
         if let button = self.statusBarItem.button {
             if self.popover.isShown {
-//                self.viewModel.popupIsShown = false
+                NSLog("Closing popup")
                 self.popover.performClose(sender)
-                self.viewModel.getContributions()
-            } else {
-//                self.viewModel.popupIsShown.toggle()
-//                self.viewModel.getContributions()
                 redrawBarItem()
-
+//                self.viewModel.getContributions()
+            } else {
+                NSLog("Opening3 popup")
                 self.popover.show(relativeTo: button.bounds, of: button, preferredEdge: NSRectEdge.minY)
             }
-//                self.viewModel.popupIsShown.toggle()
-            
-//                self.popover.show(relativeTo: button.bounds, of: button, preferredEdge: NSRectEdge.minY)
         }
     }
 

@@ -15,10 +15,16 @@ extension Defaults.Keys {
     static let theme = Key<String>("theme", default: "standard")
     static let borders = Key<Bool>("borders", default: true)
     static let transparency = Key<Bool>("transparency", default: true)
+    static let viewMode = Key<ViewMode>("viewMode", default: .week)
 }
 
 extension KeychainKeys {
     static let githubToken: KeychainAccessKey = KeychainAccessKey(key: "githubToken")
+}
+
+enum ViewMode: String, CaseIterable, Defaults.Serializable {
+case day
+case week
 }
 
 prefix func ! (value: Binding<Bool>) -> Binding<Bool> {

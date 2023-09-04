@@ -17,12 +17,16 @@
 		76240EE82AA177CF0098ADB7 /* Dto.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76240EE72AA177CF0098ADB7 /* Dto.swift */; };
 		76240EEA2AA179A40098ADB7 /* ViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76240EE92AA179A40098ADB7 /* ViewModel.swift */; };
 		76240EEC2AA17CFB0098ADB7 /* ColorExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76240EEB2AA17CFB0098ADB7 /* ColorExtension.swift */; };
-		76240EEE2AA183850098ADB7 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76240EED2AA183850098ADB7 /* ContentView.swift */; };
+		76240EEE2AA183850098ADB7 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76240EED2AA183850098ADB7 /* SettingsView.swift */; };
 		7656FE012AA18D9500D379A5 /* Defaults in Frameworks */ = {isa = PBXBuildFile; productRef = 7656FE002AA18D9500D379A5 /* Defaults */; };
 		7656FE032AA18DB700D379A5 /* Settings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7656FE022AA18DB700D379A5 /* Settings.swift */; };
 		7656FE062AA18DFC00D379A5 /* Keychain.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7656FE052AA18DFC00D379A5 /* Keychain.swift */; };
 		7656FE092AA18E0B00D379A5 /* KeychainAccess in Frameworks */ = {isa = PBXBuildFile; productRef = 7656FE082AA18E0B00D379A5 /* KeychainAccess */; };
 		7656FE0B2AA2CDA000D379A5 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7656FE0A2AA2CDA000D379A5 /* Theme.swift */; };
+		7656FE0F2AA5612700D379A5 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7656FE0E2AA5612700D379A5 /* ContentView.swift */; };
+		7656FE112AA5651A00D379A5 /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7656FE102AA5651A00D379A5 /* AboutView.swift */; };
+		7656FE152AA56F3800D379A5 /* HoverableLabel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7656FE142AA56F3800D379A5 /* HoverableLabel.swift */; };
+		7656FE172AA56F6500D379A5 /* ViewExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7656FE162AA56F6500D379A5 /* ViewExtension.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -37,10 +41,14 @@
 		76240EE72AA177CF0098ADB7 /* Dto.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Dto.swift; sourceTree = "<group>"; };
 		76240EE92AA179A40098ADB7 /* ViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewModel.swift; sourceTree = "<group>"; };
 		76240EEB2AA17CFB0098ADB7 /* ColorExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorExtension.swift; sourceTree = "<group>"; };
-		76240EED2AA183850098ADB7 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		76240EED2AA183850098ADB7 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		7656FE022AA18DB700D379A5 /* Settings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Settings.swift; sourceTree = "<group>"; };
 		7656FE052AA18DFC00D379A5 /* Keychain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Keychain.swift; sourceTree = "<group>"; };
 		7656FE0A2AA2CDA000D379A5 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		7656FE0E2AA5612700D379A5 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		7656FE102AA5651A00D379A5 /* AboutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutView.swift; sourceTree = "<group>"; };
+		7656FE142AA56F3800D379A5 /* HoverableLabel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HoverableLabel.swift; sourceTree = "<group>"; };
+		7656FE162AA56F6500D379A5 /* ViewExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewExtension.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -76,18 +84,16 @@
 		76240ED02AA02A830098ADB7 /* streak-bar */ = {
 			isa = PBXGroup;
 			children = (
+				7656FE0D2AA5611200D379A5 /* Views */,
+				7656FE0C2AA4DF4E00D379A5 /* GitHub */,
 				7656FE042AA18DE000D379A5 /* Settings */,
 				76240ED12AA02A830098ADB7 /* AppDelegate.swift */,
 				76240ED32AA02A830098ADB7 /* ViewController.swift */,
 				76240ED52AA02A840098ADB7 /* Assets.xcassets */,
 				76240ED72AA02A840098ADB7 /* Main.storyboard */,
 				76240EDA2AA02A840098ADB7 /* streak_bar.entitlements */,
-				76240EE02AA02EB00098ADB7 /* StatusItemView.swift */,
-				76240EE22AA176740098ADB7 /* Client.swift */,
-				76240EE72AA177CF0098ADB7 /* Dto.swift */,
 				76240EE92AA179A40098ADB7 /* ViewModel.swift */,
 				76240EEB2AA17CFB0098ADB7 /* ColorExtension.swift */,
-				76240EED2AA183850098ADB7 /* ContentView.swift */,
 				7656FE0A2AA2CDA000D379A5 /* Theme.swift */,
 			);
 			path = "streak-bar";
@@ -100,6 +106,28 @@
 				7656FE052AA18DFC00D379A5 /* Keychain.swift */,
 			);
 			path = Settings;
+			sourceTree = "<group>";
+		};
+		7656FE0C2AA4DF4E00D379A5 /* GitHub */ = {
+			isa = PBXGroup;
+			children = (
+				76240EE22AA176740098ADB7 /* Client.swift */,
+				76240EE72AA177CF0098ADB7 /* Dto.swift */,
+			);
+			path = GitHub;
+			sourceTree = "<group>";
+		};
+		7656FE0D2AA5611200D379A5 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				76240EE02AA02EB00098ADB7 /* StatusItemView.swift */,
+				76240EED2AA183850098ADB7 /* SettingsView.swift */,
+				7656FE0E2AA5612700D379A5 /* ContentView.swift */,
+				7656FE102AA5651A00D379A5 /* AboutView.swift */,
+				7656FE142AA56F3800D379A5 /* HoverableLabel.swift */,
+				7656FE162AA56F6500D379A5 /* ViewExtension.swift */,
+			);
+			path = Views;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -184,13 +212,17 @@
 			files = (
 				76240EE12AA02EB00098ADB7 /* StatusItemView.swift in Sources */,
 				76240ED42AA02A830098ADB7 /* ViewController.swift in Sources */,
-				76240EEE2AA183850098ADB7 /* ContentView.swift in Sources */,
+				7656FE0F2AA5612700D379A5 /* ContentView.swift in Sources */,
+				76240EEE2AA183850098ADB7 /* SettingsView.swift in Sources */,
+				7656FE112AA5651A00D379A5 /* AboutView.swift in Sources */,
 				76240EE32AA176740098ADB7 /* Client.swift in Sources */,
 				7656FE0B2AA2CDA000D379A5 /* Theme.swift in Sources */,
 				76240EE82AA177CF0098ADB7 /* Dto.swift in Sources */,
 				76240EEA2AA179A40098ADB7 /* ViewModel.swift in Sources */,
+				7656FE172AA56F6500D379A5 /* ViewExtension.swift in Sources */,
 				7656FE032AA18DB700D379A5 /* Settings.swift in Sources */,
 				76240EEC2AA17CFB0098ADB7 /* ColorExtension.swift in Sources */,
+				7656FE152AA56F3800D379A5 /* HoverableLabel.swift in Sources */,
 				76240ED22AA02A830098ADB7 /* AppDelegate.swift in Sources */,
 				7656FE062AA18DFC00D379A5 /* Keychain.swift in Sources */,
 			);

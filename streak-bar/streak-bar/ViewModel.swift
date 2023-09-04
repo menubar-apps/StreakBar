@@ -10,6 +10,7 @@ import Defaults
 
 class ViewModel: ObservableObject {
     @Default(.daysBefore) var daysBefore
+    @Default(.viewMode) var viewMode
 
     
     private var client = Client()
@@ -17,7 +18,9 @@ class ViewModel: ObservableObject {
     @Published var contributions: [ContributionWeek] = []
     
     func getContributions() {
-        let fromDate = getDateNDaysBeforeToday(n: daysBefore)
+        let multiplier = viewMode == .week ? 7 : 1
+        
+        let fromDate = getDateNDaysBeforeToday(n: daysBefore * multiplier)
         
         client.getContributions(from: fromDate) { result in
             switch result {

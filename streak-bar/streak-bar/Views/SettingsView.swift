@@ -8,34 +8,67 @@
 import SwiftUI
 import Defaults
 
-struct ContentView: View {
+struct SettingsView: View {
+    
+    var appDelegate: AppDelegate
     
     @Default(.daysBefore) var daysBefore
     @Default(.githubUsername) var githubUsername
     @Default(.theme) var theme
     @Default(.borders) var borders
     @Default(.transparency) var transparency
+    @Default(.viewMode) var viewMode
     
     @FromKeychain(.githubToken) var githubToken
     
+    @Environment(\.openURL) var openURL
+    
     var body: some View {
-        VStack (alignment: .leading){
+        VStack (alignment: .leading) {
             HStack(alignment: .center) {
                 Text("Username:").frame(width: 100, alignment: .trailing)
-                TextField("", text: $githubUsername)
+                TextField("Github username", text: $githubUsername)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                     .disableAutocorrection(true)
                     .textContentType(.password)
-                    .frame(width: 200)
+                    .frame(width: 150)
             }
             
             HStack(alignment: .center) {
-                Text("Days before:").frame(width: 100, alignment: .trailing)
+                Text("ViewMode:").frame(width: 100, alignment: .trailing)
+                VStack(alignment: .leading) {
+                    Picker("", selection: $viewMode, content: {
+                        ForEach(ViewMode.allCases, id:\.self) { vm in
+                            Text(vm.rawValue)
+                        }
+                    }).pickerStyle(.radioGroup)
+                        .onChange(of: viewMode) { _ in
+                            if viewMode == .week {
+                                daysBefore = 20
+                            } else {
+                                daysBefore = 5
+                            }
+                            appDelegate.redrawBarItem()
+                        }
+                }
+            }
+            
+            HStack(alignment: .center) {
+                Text("\(viewMode.rawValue.capitalized)s before:").frame(width: 100, alignment: .trailing)
                 TextField("", value: $daysBefore, format: .number)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                     .disableAutocorrection(true)
                     .textContentType(.password)
-                    .frame(width: 200)
+                    .frame(width: 50)
+                    .frame(alignment: .center)
+                Button(action: {
+                    appDelegate.redrawBarItem()
+                },
+                       label: {
+                    HoverableLabel(iconName: "arrow.triangle.2.circlepath")
+                })
+                .buttonStyle(.borderless)
+                .help("Re-draw")
             }
             
             HStack(alignment: .center) {
@@ -66,10 +99,12 @@ struct ContentView: View {
                 }
             }
             
-            HStack(alignment: .center) {
-                Text("Borders:").frame(width: 100, alignment: .trailing)
-                Toggle("", isOn: $borders)
-                    .toggleStyle(.switch)
+            if viewMode == .week {
+                HStack(alignment: .center) {
+                    Text("Borders:").frame(width: 100, alignment: .trailing)
+                    Toggle("", isOn: $borders)
+                        .toggleStyle(.switch)
+                }
             }
             
             HStack(alignment: .center) {
@@ -77,28 +112,41 @@ struct ContentView: View {
                 Toggle("", isOn: !$transparency)
                     .toggleStyle(.switch)
             }
-
+            
             
             HStack(alignment: .center) {
-                Text("Token:").frame(width: 100, alignment: .trailing)
-                VStack(alignment: .leading) {
-                        SecureField("", text: $githubToken)
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
-                            .frame(width: 200)
-                    Text("[Generate](https://github.com/settings/tokens/new?scopes=repo) a personal access token, make sure to select **repo** scope")
-                        .font(.footnote)
-                        .padding(.leading, 8)
-                        .foregroundColor(.secondary)
-                        .frame(width: 200)
-                }
+                Text("GitHub Token:").frame(width: 100, alignment: .trailing)
+                SecureField("", text: $githubToken)
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                    .frame(width: 120)
+                Button(action: {
+                    openURL(URL(string: "https://github.com/settings/tokens/new")!)
+                    
+                },
+                       label: {
+                    HoverableLabel(iconName: "square.and.arrow.up")
+                })
+                .buttonStyle(.plain)
+                .help("Generate token")
             }
             
         }.padding(20)
     }
-}
-
-struct ContentView_Previews: PreviewProvider {
-    static var previews: some View {
-        ContentView()
+    
+    var intProxy: Binding<Double>{
+        Binding<Double>(get: {
+            //returns the score as a Double
+            return Double(daysBefore)
+        }, set: {
+            //rounds the double to an Int
+            print($0.description)
+            daysBefore = Int($0)
+        })
     }
 }
+
+//struct ContentView_Previews: PreviewProvider {
+//    static var previews: some View {
+//        ContentView()
+//    }
+//}
