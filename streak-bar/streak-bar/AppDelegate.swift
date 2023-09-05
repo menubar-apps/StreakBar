@@ -24,6 +24,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     @Default(.viewMode) var viewMode
 
     var viewModel: ViewModel = ViewModel()
+    var timer: Timer?
 
     func applicationDidFinishLaunching(_ aNotification: Notification) {
         // Insert code here to initialize your application
@@ -41,7 +42,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         
         self.statusBarItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         
-//        redrawBarItem()
         if let button = statusBarItem.button {
             let width = viewMode == .week ? daysBefore*3 + 20 : daysBefore * 22 + 20
 
@@ -54,6 +54,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             
             viewModel.getContributions()
         }
+        
+        timer = Timer.scheduledTimer(
+                    timeInterval: Double(60 * 60),
+                    target: self,
+                    selector: #selector(redrawBarItem),
+                    userInfo: nil,
+                    repeats: true
+                )
+                timer?.fire()
+                RunLoop.main.add(timer!, forMode: .common)
     }
 
     func applicationWillTerminate(_ aNotification: Notification) {
@@ -65,6 +75,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     
+    @objc
     func redrawBarItem() {
         if let button = statusBarItem.button {
             button.subviews.removeAll()
@@ -86,12 +97,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     @objc func togglePopover(_ sender: AnyObject?) {
         if let button = self.statusBarItem.button {
             if self.popover.isShown {
-                NSLog("Closing popup")
                 self.popover.performClose(sender)
-                redrawBarItem()
-//                self.viewModel.getContributions()
             } else {
-                NSLog("Opening3 popup")
                 self.popover.show(relativeTo: button.bounds, of: button, preferredEdge: NSRectEdge.minY)
             }
         }
