@@ -14,7 +14,7 @@ jobs:
       uses: macauley/action-homebrew-bump-cask@v1
       with:
         # Required, custom GitHub access token with only the 'public_repo' scope enabled
-        token: ${{ secrets.HOMEBREW_PULLBAR_PUBLISH_TOKEN }}
+        token: ${{ secrets.HOMEBREW_STREAKBAR_PUBLISH_TOKEN }}
         # Bump all outdated casks in this tap
         tap: menubar-apps/homebrew-menubar-apps
         # Bump only these casks if outdated
