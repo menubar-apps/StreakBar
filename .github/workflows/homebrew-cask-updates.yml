@@ -18,6 +18,6 @@ jobs:
         # Bump all outdated casks in this tap
         tap: menubar-apps/homebrew-menubar-apps
         # Bump only these casks if outdated
-        cask: pullbar
+        cask: streakbar
         livecheck: true
         dryrun: false
