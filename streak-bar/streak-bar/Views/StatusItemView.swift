@@ -33,7 +33,6 @@ struct StatusItemView: View {
             HStack(spacing: 1) {
                 ForEach(viewModel.contributions, id:\.self) { week in
                     ForEach(week.contributionDays, id:\.date) { day in
-//                        Circle()
                         RoundedRectangle(cornerRadius: 4)
                             .fill(Theme.themes[theme]![day.contributionLevel]!.opacity(day.contributionLevel == .NONE && !transparency ? 0 : 1))
                             .frame(width: 16, height: 16)

@@ -43,7 +43,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         self.statusBarItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         
         if let button = statusBarItem.button {
-            let width = viewMode == .week ? daysBefore*3 + 20 : daysBefore * 22 + 20
+            let width = viewMode == .week ? daysBefore * 3 + 20 : (daysBefore + 1) * 17 + 20
 
             button.frame = NSRect(x: 0, y: 0, width: width, height: 22)
             

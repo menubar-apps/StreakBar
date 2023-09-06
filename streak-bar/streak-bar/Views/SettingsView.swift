@@ -71,46 +71,51 @@ struct SettingsView: View {
             
             HStack(alignment: .center) {
                 Text("\(viewMode.rawValue.capitalized)s before:").frame(width: 90, alignment: .trailing)
-                                TextField("", value: $daysBefore, format: .number)
-                                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                                    .disableAutocorrection(true)
-                                    .textContentType(.password)
-                                    .frame(width: 40)
-                                    .frame(alignment: .center)
-                                    .multilineTextAlignment(.trailing)
-                                    .focusable(false)
-                //                                    .disabled(true)
-                
-                Stepper("", onIncrement: {
-                    if viewMode == .week && daysBefore < 50 {
-                        daysBefore += 5
-                    } else if viewMode == .day && daysBefore < 10 {
-                        daysBefore += 1
+                HStack {
+                    HStack(spacing: 0) {
+                        Text(String(daysBefore))
+//                        TextField("", value: $daysBefore, format: .number)
+//                            .textFieldStyle(RoundedBorderTextFieldStyle())
+//                            .disableAutocorrection(true)
+//                            .textContentType(.password)
+//                            .frame(width: 40)
+//                            .frame(alignment: .center)
+//                            .multilineTextAlignment(.trailing)
+//                            .focusable(false)
+                        //                                    .disabled(true)
+                        
+                        Stepper("", onIncrement: {
+                            if viewMode == .week && daysBefore < 50 {
+                                daysBefore += 5
+                            } else if viewMode == .day && daysBefore < 10 {
+                                daysBefore += 1
+                            }
+                        }, onDecrement: {
+                            if viewMode == .week && daysBefore > 0 {
+                                daysBefore -= 5
+                            } else if viewMode == .day && daysBefore > 0 {
+                                daysBefore -= 1
+                            }                })
                     }
-                }, onDecrement: {
-                    if viewMode == .week && daysBefore > 0 {
-                        daysBefore -= 5
-                    } else if viewMode == .day && daysBefore > 0 {
-                        daysBefore -= 1
-                    }                })
-                
-                
-                //                TextField("", value: $daysBefore, format: .number)
-                //                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                //                    .disableAutocorrection(true)
-                //                    .textContentType(.password)
-                //                    .frame(width: 40)
-                //                    .frame(alignment: .center)
-                //                    .multilineTextAlignment(.trailing)
-                
-                Button(action: {
-                    appDelegate.redrawBarItem()
-                },
-                       label: {
-                    HoverableLabel(iconName: "arrow.triangle.2.circlepath")
-                })
-                .buttonStyle(.borderless)
-                .help("Re-draw")
+                    .padding(.leading, 2)
+                    
+                    //                TextField("", value: $daysBefore, format: .number)
+                    //                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                    //                    .disableAutocorrection(true)
+                    //                    .textContentType(.password)
+                    //                    .frame(width: 40)
+                    //                    .frame(alignment: .center)
+                    //                    .multilineTextAlignment(.trailing)
+                    
+                    Button(action: {
+                        appDelegate.redrawBarItem()
+                    },
+                           label: {
+                        HoverableLabel(iconName: "arrow.triangle.2.circlepath")
+                    })
+                    .buttonStyle(.borderless)
+                    .help("Re-draw")
+                }
             }
             
             HStack(alignment: .center) {
