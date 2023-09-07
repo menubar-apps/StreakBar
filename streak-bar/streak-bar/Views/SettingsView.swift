@@ -73,39 +73,36 @@ struct SettingsView: View {
                 Text("\(viewMode.rawValue.capitalized)s before:").frame(width: 90, alignment: .trailing)
                 HStack {
                     HStack(spacing: 0) {
-                        Text(String(daysBefore))
-//                        TextField("", value: $daysBefore, format: .number)
-//                            .textFieldStyle(RoundedBorderTextFieldStyle())
-//                            .disableAutocorrection(true)
-//                            .textContentType(.password)
-//                            .frame(width: 40)
-//                            .frame(alignment: .center)
-//                            .multilineTextAlignment(.trailing)
-//                            .focusable(false)
-                        //                                    .disabled(true)
                         
-                        Stepper("", onIncrement: {
-                            if viewMode == .week && daysBefore < 50 {
-                                daysBefore += 5
-                            } else if viewMode == .day && daysBefore < 10 {
-                                daysBefore += 1
-                            }
-                        }, onDecrement: {
-                            if viewMode == .week && daysBefore > 0 {
-                                daysBefore -= 5
-                            } else if viewMode == .day && daysBefore > 0 {
-                                daysBefore -= 1
-                            }                })
+                        HStack{
+                            Text(String(daysBefore))
+                                .frame(width: 50, height: 20, alignment: .center)
+                                .overlay {
+                                    HStack {
+                                        Spacer()
+                                        
+                                        Stepper("", onIncrement: {
+                                            if viewMode == .week && daysBefore < 50 {
+                                                daysBefore += 5
+                                            } else if viewMode == .day && daysBefore < 10 {
+                                                daysBefore += 1
+                                            }
+                                        }, onDecrement: {
+                                            if viewMode == .week && daysBefore > 0 {
+                                                daysBefore -= 5
+                                            } else if viewMode == .day && daysBefore > 0 {
+                                                daysBefore -= 1
+                                            }
+                                        })
+                                    }
+                                }
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 4)
+                                        .stroke(Color(nsColor: NSColor.controlColor), lineWidth: 1)
+                                )   
+                        }
                     }
                     .padding(.leading, 2)
-                    
-                    //                TextField("", value: $daysBefore, format: .number)
-                    //                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                    //                    .disableAutocorrection(true)
-                    //                    .textContentType(.password)
-                    //                    .frame(width: 40)
-                    //                    .frame(alignment: .center)
-                    //                    .multilineTextAlignment(.trailing)
                     
                     Button(action: {
                         appDelegate.redrawBarItem()
