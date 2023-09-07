@@ -103,6 +103,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
     }
+    
+    @objc
+    func quit() {
+        NSLog("User click Quit")
+        NSApplication.shared.terminate(self)
+    }
 
 }
 

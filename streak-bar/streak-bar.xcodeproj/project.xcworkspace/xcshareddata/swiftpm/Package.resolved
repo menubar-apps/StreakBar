@@ -26,6 +26,15 @@
         "branch" : "master",
         "revision" : "ecb18d8ce4d88277cc4fb103973352d91e18c535"
       }
+    },
+    {
+      "identity" : "launchatlogin-modern",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/sindresorhus/LaunchAtLogin-Modern",
+      "state" : {
+        "branch" : "main",
+        "revision" : "9c41991631605c8ccfe0347bbcb5c659169f2ec5"
+      }
     }
   ],
   "version" : 2

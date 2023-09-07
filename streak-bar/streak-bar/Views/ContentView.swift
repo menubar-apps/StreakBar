@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import LaunchAtLogin
 
 struct ContentView: View {
     
@@ -15,16 +16,40 @@ struct ContentView: View {
     var body: some View {
         
         VStack(spacing: 10) {
-            Picker("", selection: $favoriteColor) {
-                Text("Settings").tag(0)
-                Text("About").tag(1)
+            ZStack {
+                Picker("", selection: $favoriteColor) {
+                    Text("Settings").tag(0)
+                    Text("About").tag(1)
+                }
+                .pickerStyle(.segmented)
+                .frame(width: 150)
+                
+                HStack {
+                    Spacer()
+                    Menu {
+                        LaunchAtLogin.Toggle()
+
+                        Button(action: {
+                            appDelegate.quit()
+                        }) {
+                            Image(systemName: "power")
+                            Text("Quit")
+                        }
+                    } label: {
+                        HoverableLabel(iconName: "line.3.horizontal")
+                            .foregroundColor(.secondary)
+                    }
+                    .menuStyle(.borderlessButton)
+                    .frame(width: 20, height: 16)
+                    .padding(8)
+                    .padding(.trailing, 2)
+                    .focusable(false)
+                    .menuIndicator(.hidden)
+                    .contentShape(Rectangle())
+                }
             }
-            .pickerStyle(.segmented)
-            .frame(width: 150)
             
             if favoriteColor == 0 {
-//                Text("asd")
-//                    .padding(20)
                 SettingsView(appDelegate: appDelegate)
             } else {
                 AboutView()

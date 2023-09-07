@@ -27,6 +27,7 @@
 		7656FE112AA5651A00D379A5 /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7656FE102AA5651A00D379A5 /* AboutView.swift */; };
 		7656FE152AA56F3800D379A5 /* HoverableLabel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7656FE142AA56F3800D379A5 /* HoverableLabel.swift */; };
 		7656FE172AA56F6500D379A5 /* ViewExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7656FE162AA56F6500D379A5 /* ViewExtension.swift */; };
+		7656FE1A2AA95EFE00D379A5 /* LaunchAtLogin in Frameworks */ = {isa = PBXBuildFile; productRef = 7656FE192AA95EFE00D379A5 /* LaunchAtLogin */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -58,6 +59,7 @@
 			files = (
 				7656FE012AA18D9500D379A5 /* Defaults in Frameworks */,
 				76240EE62AA176F90098ADB7 /* Alamofire in Frameworks */,
+				7656FE1A2AA95EFE00D379A5 /* LaunchAtLogin in Frameworks */,
 				7656FE092AA18E0B00D379A5 /* KeychainAccess in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -150,6 +152,7 @@
 				76240EE52AA176F90098ADB7 /* Alamofire */,
 				7656FE002AA18D9500D379A5 /* Defaults */,
 				7656FE082AA18E0B00D379A5 /* KeychainAccess */,
+				7656FE192AA95EFE00D379A5 /* LaunchAtLogin */,
 			);
 			productName = "streak-bar";
 			productReference = 76240ECE2AA02A830098ADB7 /* streak-bar.app */;
@@ -183,6 +186,7 @@
 				76240EE42AA176F90098ADB7 /* XCRemoteSwiftPackageReference "Alamofire" */,
 				7656FDFF2AA18D9500D379A5 /* XCRemoteSwiftPackageReference "Defaults" */,
 				7656FE072AA18E0B00D379A5 /* XCRemoteSwiftPackageReference "KeychainAccess" */,
+				7656FE182AA95EFE00D379A5 /* XCRemoteSwiftPackageReference "LaunchAtLogin-Modern" */,
 			);
 			productRefGroup = 76240ECF2AA02A830098ADB7 /* Products */;
 			projectDirPath = "";
@@ -363,10 +367,12 @@
 				CODE_SIGN_ENTITLEMENTS = "streak-bar/streak_bar.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = UV3HUS49VJ;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = StreakBar;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				INFOPLIST_KEY_NSMainStoryboardFile = Main;
 				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
@@ -374,7 +380,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.pavelmakhov.streak-bar";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -390,10 +396,12 @@
 				CODE_SIGN_ENTITLEMENTS = "streak-bar/streak_bar.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = UV3HUS49VJ;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = StreakBar;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				INFOPLIST_KEY_NSMainStoryboardFile = Main;
 				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
@@ -401,7 +409,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.pavelmakhov.streak-bar";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -457,6 +465,14 @@
 				kind = branch;
 			};
 		};
+		7656FE182AA95EFE00D379A5 /* XCRemoteSwiftPackageReference "LaunchAtLogin-Modern" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sindresorhus/LaunchAtLogin-Modern";
+			requirement = {
+				branch = main;
+				kind = branch;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -474,6 +490,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 7656FE072AA18E0B00D379A5 /* XCRemoteSwiftPackageReference "KeychainAccess" */;
 			productName = KeychainAccess;
+		};
+		7656FE192AA95EFE00D379A5 /* LaunchAtLogin */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 7656FE182AA95EFE00D379A5 /* XCRemoteSwiftPackageReference "LaunchAtLogin-Modern" */;
+			productName = LaunchAtLogin;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
