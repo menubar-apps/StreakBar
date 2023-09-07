@@ -20,4 +20,9 @@ Highly customizable: choose a day or a week view, color theme, transparency of e
 
 ## Installation
 
-- Download latest version from [GitHub Releases](https://github.com/menubar-apps/StreakBar/releases)
+- Homebrew:
+  ```
+  brew tap menubar-apps/menubar-apps
+  brew install streakbar
+  ```
+- [Download]((https://github.com/menubar-apps/StreakBar/releases)) from github releases
