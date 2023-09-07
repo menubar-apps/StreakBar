@@ -21,7 +21,9 @@ Native macOS application to show the GitHub contribution chart in your menu bar!
 Highly customizable: choose a day or a week view, color theme, transparency of empty days, borders:
 
 <p align="center">
-  <img width="464" alt="Screenshot 2023-09-05 at 10 15 11 PM" src="https://github.com/menubar-apps/StreakBar/assets/9363150/d198d1ee-ff84-49e5-8d2f-9fbff7675af4">
+    <img width="692" alt="Screenshot 2023-09-06 at 10 17 57 PM" src="https://github.com/menubar-apps/StreakBar/assets/9363150/b1376925-56be-46c1-a189-ef71481b84dd">
+
+
 </p>
 
 ## Installation
