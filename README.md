@@ -13,8 +13,10 @@
 Native macOS application to show the GitHub contribution chart in your menu bar!
 </p>
 <p align="center">
-  <img width="603" alt="Screenshot 2023-09-05 at 10 07 57 PM" src="https://github.com/menubar-apps/StreakBar/assets/9363150/e6cb7f07-efc0-43f3-bd8b-292cab30c9af">
+  
+<img width="622" alt="Screenshot 2023-09-07 at 9 52 13 PM" src="https://github.com/menubar-apps/StreakBar/assets/9363150/3c393aff-cb82-4e1b-9ded-ada8ce28fc75">
 </p>
+
 
 ## Features
 
