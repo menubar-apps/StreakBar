@@ -23,7 +23,7 @@ struct StatusItemView: View {
                     VStack(alignment: .leading, spacing:  borders ? 1 : 0) {
                         ForEach(week.contributionDays, id:\.date) { day in
                             Rectangle()
-                                .fill(Theme.themes[theme]![day.contributionLevel]!.opacity(day.contributionLevel == .NONE && !transparency ? 0 : 1))
+                                .fill(Theme.themes[theme]![day.contributionLevel]!.opacity(day.contributionLevel == .NONE && !transparency ? 0.2 : 1))
                                 .frame(width: borders ? 2 : 3, height: borders ? 2 : 3)
                         }
                     }
@@ -34,7 +34,7 @@ struct StatusItemView: View {
                 ForEach(viewModel.contributions, id:\.self) { week in
                     ForEach(week.contributionDays, id:\.date) { day in
                         RoundedRectangle(cornerRadius: 4)
-                            .fill(Theme.themes[theme]![day.contributionLevel]!.opacity(day.contributionLevel == .NONE && !transparency ? 0 : 1))
+                            .fill(Theme.themes[theme]![day.contributionLevel]!.opacity(day.contributionLevel == .NONE && !transparency ? 0.2 : 1))
                             .frame(width: 16, height: 16)
                     }
                 }
