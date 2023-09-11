@@ -12,7 +12,6 @@ class ViewModel: ObservableObject {
     @Default(.daysBefore) var daysBefore
     @Default(.viewMode) var viewMode
 
-    
     private var client = Client()
 
     @Published var contributions: [ContributionWeek] = []
@@ -27,7 +26,7 @@ class ViewModel: ObservableObject {
             case .success(let contributionWeeks):
                 self.contributions = contributionWeeks
             case .failure(_):
-                NSLog("vse ochen ploho")
+                self.contributions = [ContributionWeek(contributionDays: [])]
             }
         }
     }
