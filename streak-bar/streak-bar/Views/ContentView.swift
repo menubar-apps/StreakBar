@@ -11,15 +11,16 @@ import LaunchAtLogin
 struct ContentView: View {
     
     var appDelegate: AppDelegate
-    @State private var favoriteColor = 0
+    @State private var selectedTab = 0
     
     var body: some View {
         
         VStack(spacing: 10) {
             ZStack {
-                Picker("", selection: $favoriteColor) {
-                    Text("Settings").tag(0)
-                    Text("About").tag(1)
+                Picker("", selection: $selectedTab) {
+                    Text("Streaks").tag(0)
+                    Text("Settings").tag(1)
+                    Text("About").tag(2)
                 }
                 .pickerStyle(.segmented)
                 .frame(width: 150)
@@ -49,9 +50,12 @@ struct ContentView: View {
                 }
             }
             
-            if favoriteColor == 0 {
+            if selectedTab == 0 {
+                StatusItemView(viewModel: appDelegate.viewModel, isFullSize: true)
+                    .padding()
+            } else if selectedTab == 1 {
                 SettingsView(appDelegate: appDelegate)
-            } else {
+            } else if selectedTab == 2 {
                 AboutView()
             }
         }

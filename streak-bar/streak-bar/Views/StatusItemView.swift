@@ -15,7 +15,9 @@ struct StatusItemView: View {
     @Default(.borders) var borders
     @Default(.transparency) var transparency
     @Default(.viewMode) var viewMode
-    
+
+    var isFullSize: Bool = false
+
     var body: some View {
         
         if viewModel.contributions.first?.contributionDays.isEmpty ?? false {
@@ -31,7 +33,7 @@ struct StatusItemView: View {
                             ForEach(week.contributionDays, id:\.date) { day in
                                 Rectangle()
                                     .fill(Theme.themes[theme]![day.contributionLevel]!.opacity(day.contributionLevel == .NONE && !transparency ? 0.2 : 1))
-                                    .frame(width: borders ? 2 : 3, height: borders ? 2 : 3)
+                                    .frame(width: (borders ? 2 : 3) * (isFullSize ? 3 : 1), height: (borders ? 2 : 3) * (isFullSize ? 3 : 1))
                             }
                         }
                     }
@@ -42,7 +44,7 @@ struct StatusItemView: View {
                         ForEach(week.contributionDays, id:\.date) { day in
                             RoundedRectangle(cornerRadius: 4)
                                 .fill(Theme.themes[theme]![day.contributionLevel]!.opacity(day.contributionLevel == .NONE && !transparency ? 0.2 : 1))
-                                .frame(width: 16, height: 16)
+                                .frame(width: 16 * (isFullSize ? 3 : 1), height: 16 * (isFullSize ? 3 : 1))
                         }
                     }
                 }

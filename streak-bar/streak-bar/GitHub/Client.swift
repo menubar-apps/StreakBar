@@ -11,7 +11,6 @@ import Defaults
 
 public class Client {
     
-    @Default(.githubUsername) var githubUsername
     @FromKeychain(.githubToken) var githubToken
 
     func getContributions(from: Date, completion: @escaping (Result<[ContributionWeek], ClientError>) -> Void) {
@@ -49,7 +48,7 @@ public class Client {
         var variables: [String: Any] = [:]
 
         // Adding values to the dictionary
-        variables["userName"] = githubUsername
+        variables["userName"] = Defaults[.githubUsername]
         variables["from"] = formatDateToCustomString(from)
         variables["to"] = formatDateToCustomString(.now)
 
