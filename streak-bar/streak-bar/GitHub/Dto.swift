@@ -83,3 +83,83 @@ enum ContributionLevel: String, Codable {
     case FOURTH_QUARTILE
     case NONE
 }
+
+// MARK: - Repository-level Contributions
+
+struct Repository: Codable, Hashable {
+    let name: String
+    let owner: Owner
+    
+    enum CodingKeys: String, CodingKey {
+        case name
+        case owner
+    }
+}
+
+struct Owner: Codable, Hashable {
+    let login: String
+    
+    enum CodingKeys: String, CodingKey {
+        case login
+    }
+}
+
+struct CommitContribution: Codable, Hashable {
+    let commitCount: Int
+    let occurredAt: String
+    
+    enum CodingKeys: String, CodingKey {
+        case commitCount
+        case occurredAt
+    }
+}
+
+struct CommitContributions: Codable, Hashable {
+    let nodes: [CommitContribution]
+    
+    enum CodingKeys: String, CodingKey {
+        case nodes
+    }
+}
+
+struct CommitContributionsByRepository: Codable, Hashable {
+    let repository: Repository
+    let contributions: CommitContributions
+    
+    enum CodingKeys: String, CodingKey {
+        case repository
+        case contributions
+    }
+}
+
+struct ContributionsCollectionDetailed: Codable {
+    let commitContributionsByRepository: [CommitContributionsByRepository]
+    
+    enum CodingKeys: String, CodingKey {
+        case commitContributionsByRepository
+    }
+}
+
+struct UserDetailed: Codable {
+    let contributionsCollection: ContributionsCollectionDetailed
+    
+    enum CodingKeys: String, CodingKey {
+        case contributionsCollection
+    }
+}
+
+struct DataResponseDetailed: Codable {
+    let user: UserDetailed
+    
+    enum CodingKeys: String, CodingKey {
+        case user
+    }
+}
+
+struct JsonResponseDetailed: Codable {
+    let data: DataResponseDetailed
+    
+    enum CodingKeys: String, CodingKey {
+        case data
+    }
+}

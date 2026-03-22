@@ -14,8 +14,9 @@ extension Defaults.Keys {
     static let daysBefore = Key<Int>("daysBefore", default: 20)
     static let theme = Key<String>("theme", default: "standard")
     static let borders = Key<Bool>("borders", default: true)
-    static let transparency = Key<Bool>("transparency", default: true)
+    static let emptyDayTransparency = Key<Bool>("emptyDayTransparency", default: true)
     static let viewMode = Key<ViewMode>("viewMode", default: .week)
+    static let hasCompletedOnboarding = Key<Bool>("hasCompletedOnboarding", default: false)
 }
 
 extension KeychainKeys {
