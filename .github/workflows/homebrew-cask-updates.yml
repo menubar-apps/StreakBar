@@ -11,13 +11,9 @@ jobs:
     runs-on: macos-latest
     steps:
     - name: Publish release
-      uses: macauley/action-homebrew-bump-cask@v1
+      uses: Homebrew/actions/bump-packages@master
       with:
         # Required, custom GitHub access token with only the 'public_repo' scope enabled
         token: ${{ secrets.HOMEBREW_STREAKBAR_PUBLISH_TOKEN }}
-        # Bump all outdated casks in this tap
-        tap: menubar-apps/homebrew-menubar-apps
-        # Bump only these casks if outdated
-        cask: streakbar
-        livecheck: true
-        dryrun: false
+        casks: streakbar
+        fork: false
