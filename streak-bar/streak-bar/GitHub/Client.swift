@@ -13,7 +13,7 @@ public class Client {
     
     @FromKeychain(.githubToken) var githubToken
 
-    func getContributions(from: Date, completion: @escaping (Result<[ContributionWeek], ClientError>) -> Void) {
+    func getContributions(from: Date, completion: @escaping (Result<(weeks: [ContributionWeek], avatarUrl: String, displayName: String?), ClientError>) -> Void) {
 
         // Validate token and username
         guard !githubToken.isEmpty else {
@@ -35,6 +35,8 @@ public class Client {
         let graphQlQuery = """
         query($userName:String!, $from: DateTime, $to: DateTime) {
           user(login: $userName){
+            name
+            avatarUrl
             contributionsCollection(from: $from, to: $to) {
               contributionCalendar {
                 totalContributions
@@ -70,7 +72,12 @@ public class Client {
             .responseDecodable(of: JsonResponse.self) { response in
                 switch response.result {
                 case .success(let resp):
-                    completion(.success(resp.data.user.contributionsCollection.contributionCalendar.weeks))
+                    let user = resp.data.user
+                    completion(.success((
+                        weeks: user.contributionsCollection.contributionCalendar.weeks,
+                        avatarUrl: user.avatarUrl,
+                        displayName: user.name
+                    )))
                 case .failure(let error):
                     // Check for specific error types
                     if let statusCode = response.response?.statusCode {
@@ -171,7 +178,6 @@ enum ClientError: Error {
     case unauthorized
     case networkError(String)
     case invalidResponse
-    case unexpected(message: String?)
     
     var userMessage: String {
         switch self {
@@ -185,8 +191,6 @@ enum ClientError: Error {
             return "Network error: \(message)"
         case .invalidResponse:
             return "Invalid response from GitHub. Please try again."
-        case .unexpected(let message):
-            return message ?? "An unexpected error occurred."
         }
     }
 }

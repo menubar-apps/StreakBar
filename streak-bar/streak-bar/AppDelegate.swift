@@ -20,9 +20,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var itemView: StatusItemView?
     var hostingView: NSView?
 
-    @Default(.daysBefore) var daysBefore
-    @Default(.viewMode) var viewMode
-
     var viewModel: ViewModel = ViewModel()
     var timer: Timer?
 
@@ -30,6 +27,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Insert code here to initialize your application
         NSApp.setActivationPolicy(.accessory)
         
+        migrateUserDefaults()
         setupMenu()
 
         contentView = ContentView(appDelegate: self)
@@ -37,7 +35,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         hostingView = NSHostingView(rootView: itemView)
         
         let popover = NSPopover()
-        popover.contentSize = NSSize(width: 0, height: 0)
+        popover.contentSize = NSSize(width: 400, height: 600)
         popover.behavior = .semitransient
         popover.contentViewController = NSHostingController(rootView: contentView)
         self.popover = popover
@@ -45,7 +43,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         self.statusBarItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         
         if let button = statusBarItem.button {
-            let width = viewMode == .week ? daysBefore * 3 + 20 : (daysBefore + 1) * 17 + 20
+            let daysBefore = Defaults[.daysBefore]
+            let isWeekMode = Defaults[.viewMode] == .week
+            let width = isWeekMode ? daysBefore * 3 + 20 : (daysBefore + 1) * 17 + 20
 
             button.frame = NSRect(x: 0, y: 0, width: width, height: 22)
             
@@ -70,6 +70,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 RunLoop.main.add(timer!, forMode: .common)
     }
     
+    func migrateUserDefaults() {
+        // Migrate legacy "transparency" key to "emptyDayTransparency"
+        if let oldValue = UserDefaults.standard.object(forKey: "transparency") as? Bool {
+            Defaults[.emptyDayTransparency] = oldValue
+            UserDefaults.standard.removeObject(forKey: "transparency")
+        }
+    }
+    
     func setupMenu() {
         let mainMenu = NSMenu()
         
@@ -88,12 +96,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
     
     @objc func showAbout() {
-        // The about view is already in the popover, so just open it
-        if let button = self.statusBarItem.button {
-            if !self.popover.isShown {
-                self.popover.show(relativeTo: button.bounds, of: button, preferredEdge: NSRectEdge.minY)
-            }
-        }
+        openAboutWindow()
     }
 
     func applicationWillTerminate(_ aNotification: Notification) {
@@ -111,7 +114,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             button.subviews.removeAll()
             viewModel.contributions.removeAll()
             
-            let width = viewMode == .week ? daysBefore*3 + 20 : daysBefore * 22 + 20
+            let width = Defaults[.viewMode] == .week ? Defaults[.daysBefore]*3 + 20 : Defaults[.daysBefore] * 22 + 20
             
             button.frame = NSRect(x: 0, y: 0, width: width, height: 22)
             
@@ -122,7 +125,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             button.sendAction(on: [.leftMouseUp, .rightMouseUp])
             
             viewModel.getContributions()
-            viewModel.getContributionsByRepository()
         }
     }
     
@@ -135,6 +137,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 if self.popover.isShown {
                     self.popover.performClose(sender)
                 } else {
+                    viewModel.getContributions()
+                    viewModel.getContributionsByRepository()
                     self.popover.show(relativeTo: button.bounds, of: button, preferredEdge: NSRectEdge.minY)
                 }
             }
@@ -167,8 +171,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(NSMenuItem(title: "Quit", action: #selector(quit), keyEquivalent: "q"))
         
         if let button = statusBarItem.button {
-            let point = NSPoint(x: button.frame.origin.x, y: button.frame.origin.y - 5)
-            menu.popUp(positioning: nil, at: point, in: button)
+            menu.popUp(positioning: nil, at: NSPoint(x: 0, y: button.bounds.height), in: button)
         }
     }
     
@@ -196,6 +199,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             preferencesWindow.title = "Settings"
             preferencesWindow.styleMask = [.titled, .closable, .resizable]
             preferencesWindow.setContentSize(NSSize(width: 500, height: 600))
+            preferencesWindow.isReleasedWhenClosed = false
             preferencesWindow.center()
         }
         
@@ -212,6 +216,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             aboutWindow.title = "About StreakBar"
             aboutWindow.styleMask = [.titled, .closable]
             aboutWindow.setContentSize(NSSize(width: 400, height: 400))
+            aboutWindow.isReleasedWhenClosed = false
             aboutWindow.center()
         }
         

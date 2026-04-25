@@ -10,7 +10,7 @@ import Defaults
 
 struct StatusItemView: View {
     
-    @StateObject var viewModel: ViewModel
+    @ObservedObject var viewModel: ViewModel
     @Default(.theme) var theme
     @Default(.borders) var borders
     @Default(.emptyDayTransparency) var emptyDayTransparency
@@ -197,14 +197,23 @@ struct StatusItemView: View {
         }
     }
     
+    // Reused across all cells — DateFormatter is expensive to allocate
+    private static let dayInputFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd"
+        return f
+    }()
+
+    private static let dayOutputFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateStyle = .medium
+        f.timeStyle = .none
+        return f
+    }()
+
     private func contributionTooltip(for day: ContributionDay) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        
-        if let date = formatter.date(from: day.date) {
-            formatter.dateStyle = .medium
-            formatter.timeStyle = .none
-            let dateString = formatter.string(from: date)
+        if let date = Self.dayInputFormatter.date(from: day.date) {
+            let dateString = Self.dayOutputFormatter.string(from: date)
             let count = day.contributionCount
             let plural = count == 1 ? "contribution" : "contributions"
             return "\(dateString)\n\(count) \(plural)"
@@ -215,21 +224,14 @@ struct StatusItemView: View {
         }
     }
     
+    private static let relativeFormatter: RelativeDateTimeFormatter = {
+        let f = RelativeDateTimeFormatter()
+        f.unitsStyle = .abbreviated
+        return f
+    }()
+
     private func timeAgo(_ date: Date) -> String {
-        let seconds = Int(Date().timeIntervalSince(date))
-        
-        if seconds < 60 {
-            return "just now"
-        } else if seconds < 3600 {
-            let minutes = seconds / 60
-            return "\(minutes)m ago"
-        } else if seconds < 86400 {
-            let hours = seconds / 3600
-            return "\(hours)h ago"
-        } else {
-            let days = seconds / 86400
-            return "\(days)d ago"
-        }
+        Self.relativeFormatter.localizedString(for: date, relativeTo: Date())
     }
 }
 

@@ -20,10 +20,13 @@ class ViewModel: ObservableObject {
     private var client = Client()
 
     @Published var contributions: [ContributionWeek] = []
+    @Published var allContributionDays: [ContributionDay] = [] // Full year window for streak calc
     @Published var contributionsByRepo: [CommitContributionsByRepository] = []
     @Published var loadingState: LoadingState = .idle
     @Published var chartLoadingState: LoadingState = .idle
     @Published var lastUpdateTime: Date?
+    @Published var avatarUrl: String?
+    @Published var userDisplayName: String?
     
     init() {
     }
@@ -40,13 +43,25 @@ class ViewModel: ObservableObject {
         client.getContributions(from: fromDate) { result in
             DispatchQueue.main.async {
                 switch result {
-                case .success(let contributionWeeks):
-                    self.contributions = contributionWeeks
+                case .success(let payload):
+                    self.contributions = payload.weeks
+                    self.avatarUrl = payload.avatarUrl
+                    self.userDisplayName = payload.displayName
                     self.loadingState = .success
                     self.lastUpdateTime = Date()
                 case .failure(let error):
                     self.contributions = [ContributionWeek(contributionDays: [])]
                     self.loadingState = .error(error.userMessage)
+                }
+            }
+        }
+        
+        // Always fetch a full year separately to power accurate streak calculation
+        let yearAgo = getDateNDaysBeforeToday(n: 365)
+        client.getContributions(from: yearAgo) { result in
+            DispatchQueue.main.async {
+                if case .success(let payload) = result {
+                    self.allContributionDays = payload.weeks.flatMap { $0.contributionDays }
                 }
             }
         }

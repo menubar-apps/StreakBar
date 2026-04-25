@@ -168,7 +168,7 @@ struct SettingsView: View {
             }
             
             Section {
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 100), spacing: 12)], spacing: 12) {
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 3), spacing: 12) {
                     ForEach(Theme.themes.keys.sorted(), id: \.self) { themeName in
                         ThemeCardView(
                             themeName: themeName,

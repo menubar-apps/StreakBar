@@ -8,6 +8,7 @@
 import Cocoa
 import SwiftUI
 import Charts
+import Defaults
 
 struct DayCommitData: Identifiable {
     let id = UUID()
@@ -44,7 +45,9 @@ struct CommitsChartView: View {
                 HStack(spacing: 8) {
                     Button(action: { periodOffset += 1 }) {
                         Image(systemName: "chevron.left")
-                            .font(.caption)
+                            .font(.body)
+                            .frame(width: 28, height: 28)
+                            .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                     .disabled(!canNavigateBackward)
@@ -58,7 +61,9 @@ struct CommitsChartView: View {
                     
                     Button(action: { periodOffset = max(0, periodOffset - 1) }) {
                         Image(systemName: "chevron.right")
-                            .font(.caption)
+                            .font(.body)
+                            .frame(width: 28, height: 28)
+                            .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                     .disabled(periodOffset == 0)
@@ -115,18 +120,15 @@ struct CommitsChartView: View {
             
             // Main content - no scrolling
             VStack(spacing: 20) {
-                // Stats section - show skeleton or real data
+                // Stats section - only use skeleton before profile data has ever loaded
                 Group {
-                    if case .loading = viewModel.chartLoadingState {
-                        skeletonStatsSection
-                    } else if case .success = viewModel.chartLoadingState {
+                    if viewModel.avatarUrl != nil {
                         statsSection
                     } else {
-                        // Show skeleton for idle and error states too to prevent layout shift
                         skeletonStatsSection
                     }
                 }
-                .frame(height: 68) // Fixed height to prevent jumping
+                .frame(height: 56) // Fixed height to prevent jumping
                 
                 // Chart section
                 chartSection
@@ -146,21 +148,96 @@ struct CommitsChartView: View {
     }
     
     private var skeletonStatsSection: some View {
-        HStack(spacing: 24) {
-            SkeletonStatCard()
-            SkeletonStatCard()
-            SkeletonStatCard()
+        HStack(spacing: 16) {
+            // Avatar skeleton
+            Circle()
+                .fill(Color.gray.opacity(0.2))
+                .frame(width: 48, height: 48)
+
+            VStack(alignment: .leading, spacing: 4) {
+                RoundedRectangle(cornerRadius: 3)
+                    .fill(Color.gray.opacity(0.2))
+                    .frame(width: 90, height: 13)
+                RoundedRectangle(cornerRadius: 3)
+                    .fill(Color.gray.opacity(0.2))
+                    .frame(width: 60, height: 11)
+            }
+
+            Spacer()
+
+            // Stat rows skeleton
+            VStack(alignment: .trailing, spacing: 6) {
+                ForEach(0..<3, id: \.self) { _ in
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(Color.gray.opacity(0.2))
+                        .frame(width: 100, height: 12)
+                }
+            }
         }
+        .padding(.horizontal, 4)
+        .shimmering(reduceMotion: reduceMotion)
         .accessibilityElement(children: .contain)
     }
-    
+
     private var statsSection: some View {
-        HStack(spacing: 24) {
-            StatCard(title: "Total Commits", value: "\(totalCommits)")
-            StatCard(title: "Daily Average", value: String(format: "%.1f", averageCommits))
-            StatCard(title: "Current Streak", value: "\(currentStreak) days")
+        HStack(spacing: 16) {
+            // Avatar + username
+            HStack(spacing: 10) {
+                Group {
+                    if let urlString = viewModel.avatarUrl, let url = URL(string: urlString) {
+                        AsyncImage(url: url) { phase in
+                            switch phase {
+                            case .success(let image):
+                                image.resizable().scaledToFill()
+                            default:
+                                Circle().fill(Color.gray.opacity(0.2))
+                            }
+                        }
+                    } else {
+                        Circle().fill(Color.gray.opacity(0.2))
+                    }
+                }
+                .frame(width: 48, height: 48)
+                .clipShape(Circle())
+
+                VStack(alignment: .leading, spacing: 2) {
+                    if let name = viewModel.userDisplayName, !name.isEmpty {
+                        Text(name)
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(.primary)
+                            .lineLimit(1)
+                    }
+                    Text("@\(Defaults[.githubUsername])")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+            }
+
+            Spacer()
+
+            // Compact stats
+            VStack(alignment: .trailing, spacing: 5) {
+                compactStat(value: "\(totalCommits)", label: "commits")
+                compactStat(value: String(format: "%.1f", averageCommits), label: "per day")
+                compactStat(value: "\(currentStreak)d", label: "streak")
+            }
         }
+        .padding(.horizontal, 4)
         .accessibilityElement(children: .contain)
+    }
+
+    private func compactStat(value: String, label: String) -> some View {
+        HStack(spacing: 4) {
+            Text(value)
+                .font(.subheadline)
+                .fontWeight(.semibold)
+                .foregroundStyle(.primary)
+            Text(label)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
     }
     
     private var chartSection: some View {
@@ -191,14 +268,20 @@ struct CommitsChartView: View {
         .cornerRadius(8)
     }
     
+    // Fixed heights for the 21 skeleton bars — stable across re-renders
+    private let skeletonBarHeights: [CGFloat] = [
+        80, 120, 60, 150, 90, 180, 70, 110, 140, 55,
+        160, 95, 130, 75, 100, 170, 85, 120, 65, 145, 90
+    ]
+
     private var skeletonChartView: some View {
         VStack(spacing: 16) {
             // Skeleton chart bars
             HStack(alignment: .bottom, spacing: 4) {
-                ForEach(0..<21, id: \.self) { _ in
+                ForEach(0..<21, id: \.self) { i in
                     RoundedRectangle(cornerRadius: 2)
                         .fill(Color.gray.opacity(0.2))
-                        .frame(height: CGFloat.random(in: 40...180))
+                        .frame(height: skeletonBarHeights[i])
                 }
             }
             .frame(height: 200)
@@ -398,7 +481,7 @@ struct CommitsChartView: View {
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
         let dateFormatter = ISO8601DateFormatter()
-        dateFormatter.formatOptions = [.withFullDate, .withDashSeparatorInDate]
+        dateFormatter.formatOptions = [.withInternetDateTime]
         
         var dateToRepoCommits: [Date: [String: Int]] = [:]
         var allRepoNames = Set<String>()
@@ -457,57 +540,38 @@ struct CommitsChartView: View {
         return result
     }
     
-    private var repositoryColors: [String: Color] {
-        let allRepoNames = Set(viewModel.contributionsByRepo.map { repoData in
-            "\(repoData.repository.owner.login)/\(repoData.repository.name)"
-        })
-        return assignColorsToRepos(Array(allRepoNames).sorted())
-    }
-    
     private var repositoryLegendItems: [(name: String, color: Color, commits: Int)] {
-        var repoTotalCommits: [String: Int] = [:]
-        
-        // Calculate total commits per repository
+        var repoInfo: [String: (color: Color, commits: Int)] = [:]
+
+        // Derive totals and colors directly from stackedChartData so both
+        // chart bars and legend always use the same color assignment.
         for dayData in stackedChartData {
             for repoCommit in dayData.repoCommits {
-                repoTotalCommits[repoCommit.repoName, default: 0] += repoCommit.count
+                let existing = repoInfo[repoCommit.repoName]
+                repoInfo[repoCommit.repoName] = (
+                    color: existing?.color ?? repoCommit.color,
+                    commits: (existing?.commits ?? 0) + repoCommit.count
+                )
             }
         }
-        
-        // Sort by commit count (descending) and create legend items
-        return repoTotalCommits.map { (name: $0.key, color: repositoryColors[$0.key] ?? .gray, commits: $0.value) }
+
+        return repoInfo
+            .map { (name: $0.key, color: $0.value.color, commits: $0.value.commits) }
             .sorted { $0.commits > $1.commits }
-    }
-    
-    private var chartData: [DayCommitData] {
-        let allDays = viewModel.contributions.flatMap { $0.contributionDays }
-        
-        // Calculate which slice of days to show based on periodOffset
-        let baseDaysOffset = periodOffset * 21
-        let totalDays = allDays.count
-        
-        // We want to get 21 days ending at (totalDays - baseDaysOffset)
-        let endIndex = totalDays - baseDaysOffset
-        let startIndex = max(0, endIndex - 21)
-        
-        guard startIndex < totalDays && endIndex > 0 else {
-            return []
-        }
-        
-        let selectedDays = Array(allDays[startIndex..<min(endIndex, totalDays)])
-        
-        let dateFormatter = ISO8601DateFormatter()
-        dateFormatter.formatOptions = [.withFullDate, .withDashSeparatorInDate]
-        
-        return selectedDays.compactMap { day -> DayCommitData? in
-            guard let date = dateFormatter.date(from: day.date) else { return nil }
-            return DayCommitData(date: date, commits: day.contributionCount)
-        }
     }
     
     private var totalCommits: Int {
         stackedChartData.reduce(0) { total, dayData in
             total + dayData.repoCommits.reduce(0) { $0 + $1.count }
+        }
+    }
+
+    private var chartData: [DayCommitData] {
+        stackedChartData.map { dayData in
+            DayCommitData(
+                date: dayData.date,
+                commits: dayData.repoCommits.reduce(0) { $0 + $1.count }
+            )
         }
     }
     
@@ -517,7 +581,8 @@ struct CommitsChartView: View {
     }
     
     private var currentStreak: Int {
-        let allDays = viewModel.contributions.flatMap { $0.contributionDays }
+        // Use allContributionDays (full year) so the streak is not capped by the menubar display window
+        let allDays = viewModel.allContributionDays
         guard !allDays.isEmpty else { return 0 }
         
         var streak = 0
@@ -545,52 +610,6 @@ struct CommitsChartView: View {
     
     private func openAbout() {
         appDelegate.openAboutWindow()
-    }
-}
-
-// MARK: - StatCard Component
-
-struct StatCard: View {
-    let title: String
-    let value: String
-    
-    var body: some View {
-        VStack(spacing: 4) {
-            Text(value)
-                .font(.title2)
-                .fontWeight(.semibold)
-                .foregroundStyle(.primary)
-            Text(title)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 12)
-        .background(Color(nsColor: .controlBackgroundColor))
-        .cornerRadius(8)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(title): \(value)")
-    }
-}
-
-// MARK: - SkeletonStatCard Component
-
-struct SkeletonStatCard: View {
-    var body: some View {
-        VStack(spacing: 4) {
-            RoundedRectangle(cornerRadius: 4)
-                .fill(Color.gray.opacity(0.2))
-                .frame(width: 60, height: 28)
-            
-            RoundedRectangle(cornerRadius: 3)
-                .fill(Color.gray.opacity(0.2))
-                .frame(width: 80, height: 12)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 12)
-        .background(Color(nsColor: .controlBackgroundColor))
-        .cornerRadius(8)
-        .accessibilityLabel("Loading statistics")
     }
 }
 

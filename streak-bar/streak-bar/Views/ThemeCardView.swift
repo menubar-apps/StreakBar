@@ -58,6 +58,7 @@ struct ThemeCardView: View {
         }
         .contentShape(Rectangle())
         .onTapGesture(perform: onTap)
+        .accessibilityAction(.default, onTap)
         .whenHovered { hovering in
             withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.15)) {
                 isHovering = hovering

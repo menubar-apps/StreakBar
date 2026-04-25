@@ -24,13 +24,18 @@ struct ContentView: View {
                 }
             }
             .sheet(isPresented: $showOnboarding) {
-                OnboardingView(isPresented: $showOnboarding)
+                OnboardingView(isPresented: $showOnboarding) {
+                    // Mark complete and open Settings so user can enter their token
+                    hasCompletedOnboarding = true
+                    appDelegate.redrawBarItem()
+                    appDelegate.openSettingsWindow()
+                }
             }
             .onChange(of: showOnboarding) { newValue in
+                // Only treat an Escape-dismiss (sheet closed without completing)
+                // as needing a redraw — onComplete handles the normal completion path.
                 if !newValue && !hasCompletedOnboarding {
-                    // Mark onboarding as completed when dismissed
                     hasCompletedOnboarding = true
-                    // Trigger initial data fetch
                     appDelegate.redrawBarItem()
                 }
             }

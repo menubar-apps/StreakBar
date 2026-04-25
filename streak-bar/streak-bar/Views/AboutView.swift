@@ -10,8 +10,8 @@ import SwiftUI
 struct AboutView: View {
     @Environment(\.openURL) var openURL
     
-    let currentVersion = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as! String
-    let currentYear = Calendar.current.component(.year, from: Date())
+    let currentVersion = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "Unknown"
+    var currentYear: Int { Calendar.current.component(.year, from: Date()) }
     
     var body: some View {
         ScrollView {
@@ -101,6 +101,24 @@ struct AboutView: View {
                     .padding(8)
                 }
                 .padding(.horizontal, 40)
+                
+                // Buy Me a Coffee
+                Link(destination: URL(string: "https://buymeacoffee.com/streetturtle")!) {
+                    HStack(spacing: 8) {
+                        Text("☕")
+                        Text("Buy me a coffee")
+                            .fontWeight(.medium)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 8)
+                    .background(Color(red: 1.0, green: 0.81, blue: 0.27))
+                    .foregroundStyle(.black)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                }
+                .buttonStyle(.plain)
+                .padding(.horizontal, 40)
+                .help("Support StreakBar development")
+                .accessibilityLabel("Buy me a coffee to support development")
                 
                 // Credits
                 VStack(spacing: 4) {

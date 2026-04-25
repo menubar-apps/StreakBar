@@ -10,6 +10,7 @@ import Defaults
 
 struct OnboardingView: View {
     @Binding var isPresented: Bool
+    var onComplete: (() -> Void)? = nil
     @State private var currentPage = 0
     @Default(.githubUsername) var githubUsername
     @Default(.theme) var selectedTheme
@@ -228,5 +229,6 @@ struct OnboardingView: View {
     
     private func completeOnboarding() {
         isPresented = false
+        onComplete?()
     }
 }
