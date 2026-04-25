@@ -10,10 +10,13 @@ jobs:
   bump-casks:
     runs-on: macos-latest
     steps:
+    - name: Add custom tap
+      run: brew tap menubar-apps/homebrew-menubar-apps
+
     - name: Publish release
       uses: Homebrew/actions/bump-packages@master
       with:
         # Required, custom GitHub access token with only the 'public_repo' scope enabled
         token: ${{ secrets.HOMEBREW_STREAKBAR_PUBLISH_TOKEN }}
-        casks: streakbar
+        casks: menubar-apps/homebrew-menubar-apps/streakbar
         fork: false
