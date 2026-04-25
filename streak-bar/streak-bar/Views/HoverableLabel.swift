@@ -11,15 +11,25 @@ struct HoverableLabel: View {
     
     let iconName: String
     @State private var isHovering = false
+    @Environment(\.accessibilityReduceMotion) var reduceMotion
 
     var body: some View {
-        Label("Settings", systemImage: iconName)
+        Label("", systemImage: iconName)
             .labelStyle(.iconOnly)
-            .padding(4)
+            .font(.body)
+            .foregroundStyle(isHovering ? .primary : .secondary)
+            .padding(6)
             .background(
-                RoundedRectangle(cornerRadius: 4, style: .continuous).fill(.secondary.opacity(isHovering ? 0.2 : 0))
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .fill(.secondary.opacity(isHovering ? 0.15 : 0))
             )
-            .whenHovered { over in isHovering = over }
+            .whenHovered { over in
+                withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.15)) {
+                    isHovering = over
+                }
+            }
+            .scaleEffect(isHovering ? 1.05 : 1.0)
+            .animation(reduceMotion ? nil : .spring(response: 0.3, dampingFraction: 0.6), value: isHovering)
     }
 }
 

@@ -20,22 +20,22 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var itemView: StatusItemView?
     var hostingView: NSView?
 
-    @Default(.daysBefore) var daysBefore
-    @Default(.viewMode) var viewMode
-
     var viewModel: ViewModel = ViewModel()
     var timer: Timer?
 
     func applicationDidFinishLaunching(_ aNotification: Notification) {
         // Insert code here to initialize your application
         NSApp.setActivationPolicy(.accessory)
+        
+        migrateUserDefaults()
+        setupMenu()
 
         contentView = ContentView(appDelegate: self)
         itemView =  StatusItemView(viewModel: self.viewModel)
         hostingView = NSHostingView(rootView: itemView)
         
         let popover = NSPopover()
-        popover.contentSize = NSSize(width: 0, height: 0)
+        popover.contentSize = NSSize(width: 400, height: 600)
         popover.behavior = .semitransient
         popover.contentViewController = NSHostingController(rootView: contentView)
         self.popover = popover
@@ -43,7 +43,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         self.statusBarItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         
         if let button = statusBarItem.button {
-            let width = viewMode == .week ? daysBefore * 3 + 20 : (daysBefore + 1) * 17 + 20
+            let daysBefore = Defaults[.daysBefore]
+            let isWeekMode = Defaults[.viewMode] == .week
+            let width = isWeekMode ? daysBefore * 3 + 20 : (daysBefore + 1) * 17 + 20
 
             button.frame = NSRect(x: 0, y: 0, width: width, height: 22)
             
@@ -51,7 +53,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             hostingView.frame = button.frame
             button.addSubview(hostingView)
             button.action = #selector(togglePopover(_:))
+            button.sendAction(on: [.leftMouseUp, .rightMouseUp])
             
+            // Fetch menubar data only
             viewModel.getContributions()
         }
         
@@ -64,6 +68,35 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 )
                 timer?.fire()
                 RunLoop.main.add(timer!, forMode: .common)
+    }
+    
+    func migrateUserDefaults() {
+        // Migrate legacy "transparency" key to "emptyDayTransparency"
+        if let oldValue = UserDefaults.standard.object(forKey: "transparency") as? Bool {
+            Defaults[.emptyDayTransparency] = oldValue
+            UserDefaults.standard.removeObject(forKey: "transparency")
+        }
+    }
+    
+    func setupMenu() {
+        let mainMenu = NSMenu()
+        
+        // App menu
+        let appMenuItem = NSMenuItem()
+        mainMenu.addItem(appMenuItem)
+        
+        let appMenu = NSMenu()
+        appMenuItem.submenu = appMenu
+        
+        appMenu.addItem(NSMenuItem(title: "About StreakBar", action: #selector(showAbout), keyEquivalent: ""))
+        appMenu.addItem(NSMenuItem.separator())
+        appMenu.addItem(NSMenuItem(title: "Quit StreakBar", action: #selector(quit), keyEquivalent: "q"))
+        
+        NSApp.mainMenu = mainMenu
+    }
+    
+    @objc func showAbout() {
+        openAboutWindow()
     }
 
     func applicationWillTerminate(_ aNotification: Notification) {
@@ -81,7 +114,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             button.subviews.removeAll()
             viewModel.contributions.removeAll()
             
-            let width = viewMode == .week ? daysBefore*3 + 20 : daysBefore * 22 + 20
+            let width = Defaults[.viewMode] == .week ? Defaults[.daysBefore]*3 + 20 : Defaults[.daysBefore] * 22 + 20
             
             button.frame = NSRect(x: 0, y: 0, width: width, height: 22)
             
@@ -89,6 +122,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             hostingView.frame = button.frame
             button.addSubview(hostingView)
             button.action = #selector(togglePopover(_:))
+            button.sendAction(on: [.leftMouseUp, .rightMouseUp])
             
             viewModel.getContributions()
         }
@@ -96,11 +130,55 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     
     @objc func togglePopover(_ sender: AnyObject?) {
         if let button = self.statusBarItem.button {
-            if self.popover.isShown {
-                self.popover.performClose(sender)
+            // Check if right-click (or control-click)
+            if let event = NSApp.currentEvent, event.type == .rightMouseUp || (event.type == .leftMouseUp && event.modifierFlags.contains(.control)) {
+                showContextMenu()
             } else {
-                self.popover.show(relativeTo: button.bounds, of: button, preferredEdge: NSRectEdge.minY)
+                if self.popover.isShown {
+                    self.popover.performClose(sender)
+                } else {
+                    viewModel.getContributions()
+                    viewModel.getContributionsByRepository()
+                    self.popover.show(relativeTo: button.bounds, of: button, preferredEdge: NSRectEdge.minY)
+                }
             }
+        }
+    }
+    
+    func showContextMenu() {
+        let menu = NSMenu()
+        
+        menu.addItem(NSMenuItem(title: "Refresh", action: #selector(redrawBarItem), keyEquivalent: "r"))
+        
+        if let lastUpdate = viewModel.lastUpdateTime {
+            let formatter = DateFormatter()
+            formatter.timeStyle = .short
+            let timeString = formatter.string(from: lastUpdate)
+            let updateItem = NSMenuItem(title: "Last updated: \(timeString)", action: nil, keyEquivalent: "")
+            updateItem.isEnabled = false
+            menu.addItem(updateItem)
+        }
+        
+        menu.addItem(NSMenuItem.separator())
+        
+        // View on GitHub
+        if !Defaults[.githubUsername].isEmpty {
+            menu.addItem(NSMenuItem(title: "View on GitHub", action: #selector(openGitHubProfile), keyEquivalent: ""))
+        }
+        
+        menu.addItem(NSMenuItem.separator())
+        menu.addItem(NSMenuItem(title: "About StreakBar", action: #selector(showAbout), keyEquivalent: ""))
+        menu.addItem(NSMenuItem(title: "Quit", action: #selector(quit), keyEquivalent: "q"))
+        
+        if let button = statusBarItem.button {
+            menu.popUp(positioning: nil, at: NSPoint(x: 0, y: button.bounds.height), in: button)
+        }
+    }
+    
+    @objc func openGitHubProfile() {
+        let username = Defaults[.githubUsername]
+        if let url = URL(string: "https://github.com/\(username)") {
+            NSWorkspace.shared.open(url)
         }
     }
     
@@ -108,6 +186,42 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func quit() {
         NSLog("User click Quit")
         NSApplication.shared.terminate(self)
+    }
+    
+    // MARK: - Window Management
+    
+    func openSettingsWindow() {
+        if preferencesWindow == nil {
+            let settingsView = SettingsView(appDelegate: self)
+            let hostingController = NSHostingController(rootView: settingsView)
+            
+            preferencesWindow = NSWindow(contentViewController: hostingController)
+            preferencesWindow.title = "Settings"
+            preferencesWindow.styleMask = [.titled, .closable, .resizable]
+            preferencesWindow.setContentSize(NSSize(width: 500, height: 600))
+            preferencesWindow.isReleasedWhenClosed = false
+            preferencesWindow.center()
+        }
+        
+        preferencesWindow.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+    }
+    
+    func openAboutWindow() {
+        if aboutWindow == nil {
+            let aboutView = AboutView()
+            let hostingController = NSHostingController(rootView: aboutView)
+            
+            aboutWindow = NSWindow(contentViewController: hostingController)
+            aboutWindow.title = "About StreakBar"
+            aboutWindow.styleMask = [.titled, .closable]
+            aboutWindow.setContentSize(NSSize(width: 400, height: 400))
+            aboutWindow.isReleasedWhenClosed = false
+            aboutWindow.center()
+        }
+        
+        aboutWindow.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
     }
 
 }

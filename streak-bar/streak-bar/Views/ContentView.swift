@@ -6,63 +6,42 @@
 //
 
 import SwiftUI
-import LaunchAtLogin
+import Defaults
 
 struct ContentView: View {
     
     var appDelegate: AppDelegate
-    @State private var selectedTab = 0
+    @Default(.hasCompletedOnboarding) var hasCompletedOnboarding
+    @State private var showOnboarding = false
     
     var body: some View {
-        
-        VStack(spacing: 10) {
-            ZStack {
-                Picker("", selection: $selectedTab) {
-                    Text("Streaks").tag(0)
-                    Text("Settings").tag(1)
-                    Text("About").tag(2)
-                }
-                .pickerStyle(.segmented)
-                .frame(width: 150)
-                
-                HStack {
-                    Spacer()
-                    Menu {
-                        LaunchAtLogin.Toggle()
-
-                        Button(action: {
-                            appDelegate.quit()
-                        }) {
-                            Image(systemName: "power")
-                            Text("Quit")
-                        }
-                    } label: {
-                        HoverableLabel(iconName: "line.3.horizontal")
-                            .foregroundColor(.secondary)
-                    }
-                    .menuStyle(.borderlessButton)
-                    .frame(width: 20, height: 16)
-                    .padding(8)
-                    .padding(.trailing, 2)
-                    .focusable(false)
-                    .menuIndicator(.hidden)
-                    .contentShape(Rectangle())
+        CommitsChartView(viewModel: appDelegate.viewModel, appDelegate: appDelegate)
+            .frame(minWidth: 400, minHeight: 600)
+            .onAppear {
+                // Check if we need to show onboarding
+                if !hasCompletedOnboarding {
+                    showOnboarding = true
                 }
             }
-            
-            if selectedTab == 0 {
-                StatusItemView(viewModel: appDelegate.viewModel, isFullSize: true)
-                    .padding()
-            } else if selectedTab == 1 {
-                SettingsView(appDelegate: appDelegate)
-            } else if selectedTab == 2 {
-                AboutView()
+            .sheet(isPresented: $showOnboarding) {
+                OnboardingView(isPresented: $showOnboarding) {
+                    // Mark complete and open Settings so user can enter their token
+                    hasCompletedOnboarding = true
+                    appDelegate.redrawBarItem()
+                    appDelegate.openSettingsWindow()
+                }
             }
-        }
-        .padding(.top, 16)
-        .frame(alignment: .top)
+            .onChange(of: showOnboarding) { newValue in
+                // Only treat an Escape-dismiss (sheet closed without completing)
+                // as needing a redraw — onComplete handles the normal completion path.
+                if !newValue && !hasCompletedOnboarding {
+                    hasCompletedOnboarding = true
+                    appDelegate.redrawBarItem()
+                }
+            }
     }
 }
+
 
 //struct ContentView_Previews: PreviewProvider {
 //    static var previews: some View {
