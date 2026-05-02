@@ -5,18 +5,36 @@ on:
     types: [published]
   # Manual trigger from the UI
   workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag (e.g. v1.5)
+        required: false
 
 jobs:
   bump-casks:
     runs-on: macos-latest
     steps:
-    - name: Add custom tap
-      run: brew tap menubar-apps/homebrew-menubar-apps
+      - name: Prepare Homebrew
+        run: brew update-reset
 
-    - name: Publish release
-      uses: Homebrew/actions/bump-packages@master
-      with:
-        # Required, custom GitHub access token with only the 'public_repo' scope enabled
-        token: ${{ secrets.HOMEBREW_STREAKBAR_PUBLISH_TOKEN }}
-        casks: menubar-apps/homebrew-menubar-apps/streakbar
-        fork: false
+      - name: Bump streakbar cask
+        env:
+          HOMEBREW_GITHUB_API_TOKEN: ${{ secrets.HOMEBREW_STREAKBAR_PUBLISH_TOKEN }}
+          RELEASE_TAG: ${{ github.event.inputs.tag || github.event.release.tag_name || github.ref_name }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${RELEASE_TAG}" ]; then
+            echo "Could not determine release tag"
+            exit 1
+          fi
+
+          VERSION="${RELEASE_TAG#v}"
+
+          brew tap menubar-apps/homebrew-menubar-apps
+          brew bump-cask-pr \
+            --version "${VERSION}" \
+            --no-audit \
+            --no-style \
+            --no-browse \
+            menubar-apps/homebrew-menubar-apps/streakbar
