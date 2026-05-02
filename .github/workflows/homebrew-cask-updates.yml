@@ -30,10 +30,13 @@ jobs:
           fi
 
           VERSION="${RELEASE_TAG#v}"
+          DMG_URL="https://github.com/menubar-apps/StreakBar/releases/download/v${VERSION}/StreakBar.${VERSION}.dmg"
+          SHA256=$(curl -sL "${DMG_URL}" | shasum -a 256 | cut -d ' ' -f 1)
 
           brew tap menubar-apps/homebrew-menubar-apps
           brew bump-cask-pr \
             --version "${VERSION}" \
+            --sha256 "${SHA256}" \
             --no-audit \
             --no-style \
             --no-browse \
