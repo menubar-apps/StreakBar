@@ -19,7 +19,7 @@ jobs:
 
       - name: Bump streakbar cask
         env:
-          HOMEBREW_GITHUB_API_TOKEN: ${{ secrets.HOMEBREW_STREAKBAR_PUBLISH_TOKEN }}
+          HOMEBREW_GITHUB_API_TOKEN: ${{ secrets.HOMEBREW_PUBLISH_TOKEN }}
           RELEASE_TAG: ${{ github.event.inputs.tag || github.event.release.tag_name || github.ref_name }}
         run: |
           set -euo pipefail
