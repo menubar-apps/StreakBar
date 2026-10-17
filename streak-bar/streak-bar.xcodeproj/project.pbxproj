@@ -341,7 +341,7 @@
 			repositoryURL = "https://github.com/Alamofire/Alamofire";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 5.11.2;
+				minimumVersion = 5.12.2;
 			};
 		};
 		7656FDFF2AA18D9500D379A5 /* XCRemoteSwiftPackageReference "Defaults" */ = {
@@ -349,7 +349,7 @@
 			repositoryURL = "https://github.com/sindresorhus/Defaults";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 9.0.8;
+				minimumVersion = 9.0.9;
 			};
 		};
 		7656FE072AA18E0B00D379A5 /* XCRemoteSwiftPackageReference "KeychainAccess" */ = {
