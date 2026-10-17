@@ -12,7 +12,7 @@ import LaunchAtLogin
 struct SettingsView: View {
     
     var appDelegate: AppDelegate
-    
+
     @Default(.daysBefore) var daysBefore
     @Default(.theme) var theme
     @Default(.borders) var borders
@@ -24,14 +24,13 @@ struct SettingsView: View {
     @StateObject private var auth = DeviceFlowAuth()
     @State private var method: AuthMethod = DeviceFlowAuth.isConfigured ? .github : .personalToken
     @State private var isConfirmingSignOut = false
+    @State private var tokenDraft = ""
+    @FocusState private var isTokenFieldFocused: Bool
 
     @Environment(\.openURL) var openURL
 
-    private var personalTokenBinding: Binding<String> {
-        Binding(
-            get: { AuthMethod.of(token: githubToken) == .personalToken ? githubToken : "" },
-            set: { githubToken = $0 }
-        )
+    private var isSignedInWithGitHub: Bool {
+        AuthMethod.of(token: githubToken) == .github
     }
 
     var body: some View {
@@ -48,14 +47,6 @@ struct SettingsView: View {
                 if !githubToken.isEmpty {
                     LabeledContent(AuthMethod.of(token: githubToken) == .github ? "Signed in with GitHub" : "Using a personal access token") {
                         HStack(spacing: 8) {
-                            Button(action: {
-                                appDelegate.redrawBarItem()
-                            }) {
-                                Image(systemName: "arrow.triangle.2.circlepath")
-                            }
-                            .buttonStyle(.borderless)
-                            .help("Refresh contributions")
-                            .accessibilityLabel("Refresh contributions")
                             if AuthMethod.of(token: githubToken) == .github, let manageAccessUrl = DeviceFlowAuth.manageAccessUrl {
                                 Link("Manage Access", destination: manageAccessUrl)
                                     .font(.footnote)
@@ -84,8 +75,11 @@ struct SettingsView: View {
                     signInSection
                 } else {
                     HStack(spacing: 8) {
-                        SecureField("GitHub token", text: personalTokenBinding)
+                        SecureField("GitHub token", text: $tokenDraft)
                             .textFieldStyle(.roundedBorder)
+                            .focused($isTokenFieldFocused)
+                            .onSubmit(commitToken)
+                            .disabled(isSignedInWithGitHub)
                             .help("Personal access token with read:user scope")
                             .accessibilityLabel("GitHub personal access token")
 
@@ -97,6 +91,11 @@ struct SettingsView: View {
                         .buttonStyle(.borderless)
                         .help("Generate new token on GitHub")
                         .accessibilityLabel("Open GitHub to generate token")
+                    }
+                    if isSignedInWithGitHub {
+                        Text("To use a personal access token, sign out first.")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
                     }
                 }
             } header: {
@@ -131,11 +130,7 @@ struct SettingsView: View {
                         }
                     } else {
                         daysBefore = min(daysBefore, 10)
-                        if daysBefore > 10 {
-                            daysBefore = 5
-                        }
                     }
-                    appDelegate.redrawBarItem()
                 }
                 .accessibilityLabel("View mode selection")
                 
@@ -146,7 +141,6 @@ struct SettingsView: View {
                             let minValue = viewMode == .week ? 5 : 1
                             if daysBefore > minValue {
                                 daysBefore -= step
-                                appDelegate.redrawBarItem()
                             }
                         }) {
                             Image(systemName: "minus")
@@ -167,7 +161,6 @@ struct SettingsView: View {
                             let maxValue = viewMode == .week ? 50 : 10
                             if daysBefore < maxValue {
                                 daysBefore += step
-                                appDelegate.redrawBarItem()
                             }
                         }) {
                             Image(systemName: "plus")
@@ -184,17 +177,11 @@ struct SettingsView: View {
                 
                 if viewMode == .week {
                     Toggle("Show Borders", isOn: $borders)
-                        .onChange(of: borders) { _ in
-                            appDelegate.redrawBarItem()
-                        }
                         .help("Add spacing between contribution squares")
                         .accessibilityLabel("Show borders between days")
                 }
                 
                 Toggle("Empty Days Transparent", isOn: $emptyDayTransparency)
-                    .onChange(of: emptyDayTransparency) { _ in
-                        appDelegate.redrawBarItem()
-                    }
                     .help("Make days with no contributions more transparent")
                     .accessibilityLabel("Make empty days transparent")
                 
@@ -210,7 +197,6 @@ struct SettingsView: View {
                             isSelected: theme == themeName,
                             onTap: {
                                 theme = themeName
-                                appDelegate.redrawBarItem()
                             }
                         )
                     }
@@ -222,7 +208,6 @@ struct SettingsView: View {
         }
         .formStyle(.grouped)
         .scrollContentBackground(.hidden)
-        .frame(minWidth: 400, minHeight: 500)
         .confirmationDialog("Remove the saved token?", isPresented: $isConfirmingSignOut) {
             Button("Remove Token", role: .destructive) { signOut() }
             Button("Cancel", role: .cancel) {}
@@ -231,13 +216,22 @@ struct SettingsView: View {
         }
         .onAppear {
             method = AuthMethod.of(token: githubToken) ?? (DeviceFlowAuth.isConfigured ? .github : .personalToken)
+            tokenDraft = AuthMethod.of(token: githubToken) == .personalToken ? githubToken : ""
+        }
+        .onChange(of: isTokenFieldFocused) { focused in
+            if !focused {
+                commitToken()
+            }
         }
         .onChange(of: auth.state) { state in
             if state == .signedIn {
-                appDelegate.redrawBarItem()
+                appDelegate.refreshContributions()
             }
         }
-        .onDisappear { auth.cancel() }
+        .onDisappear {
+            commitToken()
+            auth.cancel()
+        }
     }
 
     @ViewBuilder
@@ -292,11 +286,23 @@ struct SettingsView: View {
         }
     }
 
+    // Saves the personal token once editing ends; never replaces a GitHub sign-in
+    private func commitToken() {
+        guard !isSignedInWithGitHub else { return }
+        let token = tokenDraft.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard token != githubToken else { return }
+        appDelegate.viewModel.resetAccountData()
+        githubToken = token
+        appDelegate.refreshContributions()
+    }
+
     private func signOut() {
         auth.cancel()
         githubToken = ""
+        tokenDraft = ""
         Defaults[.githubUsername] = ""
-        appDelegate.redrawBarItem()
+        appDelegate.viewModel.resetAccountData()
+        appDelegate.refreshContributions()
     }
 }
 

@@ -93,7 +93,7 @@ public class Client {
         return dateFormatter.string(from: date)
     }
     
-    func getContributionsByRepository(from: Date, maxRepos: Int = 10, completion: @escaping (Result<[CommitContributionsByRepository], ClientError>) -> Void) {
+    func getContributionsByRepository(from: Date, to: Date = .now, maxRepos: Int = 10, completion: @escaping (Result<[CommitContributionsByRepository], ClientError>) -> Void) {
         
         // Validate token
         guard !githubToken.isEmpty else {
@@ -131,7 +131,7 @@ public class Client {
         
         var variables: [String: Any] = [:]
         variables["from"] = formatDateToCustomString(from)
-        variables["to"] = formatDateToCustomString(.now)
+        variables["to"] = formatDateToCustomString(to)
         variables["maxRepos"] = maxRepos
         
         let parameters = [
@@ -165,7 +165,16 @@ enum ClientError: Error {
     case unauthorized
     case networkError(String)
     case invalidResponse
-    
+
+    var requiresSignIn: Bool {
+        switch self {
+        case .missingToken, .unauthorized:
+            return true
+        case .networkError, .invalidResponse:
+            return false
+        }
+    }
+
     var userMessage: String {
         switch self {
         case .missingToken:

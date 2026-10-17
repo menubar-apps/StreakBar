@@ -14,11 +14,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     
     var statusBarItem: NSStatusItem!
     var popover: NSPopover!
-    var preferencesWindow: NSWindow!
     var aboutWindow: NSWindow!
     var contentView: ContentView?
-    var itemView: StatusItemView?
-    var hostingView: NSView?
+    var hostingView: NSHostingView<StatusItemView>?
+    var barItemObservation: Defaults.Observation?
 
     var viewModel: ViewModel = ViewModel()
     var timer: Timer?
@@ -31,9 +30,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         setupMenu()
 
         contentView = ContentView(appDelegate: self)
-        itemView =  StatusItemView(viewModel: self.viewModel)
-        hostingView = NSHostingView(rootView: itemView)
-        
+
         let popover = NSPopover()
         popover.contentSize = NSSize(width: 400, height: 600)
         popover.behavior = .semitransient
@@ -43,31 +40,54 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         self.statusBarItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         
         if let button = statusBarItem.button {
-            let daysBefore = Defaults[.daysBefore]
-            let isWeekMode = Defaults[.viewMode] == .week
-            let width = isWeekMode ? daysBefore * 3 + 20 : (daysBefore + 1) * 17 + 20
-
-            button.frame = NSRect(x: 0, y: 0, width: width, height: 22)
-            
-            let hostingView = NSHostingView(rootView: itemView)
-            hostingView.frame = button.frame
+            let hostingView = NSHostingView(rootView: StatusItemView(viewModel: viewModel))
+            hostingView.sizingOptions = []
+            hostingView.translatesAutoresizingMaskIntoConstraints = false
             button.addSubview(hostingView)
+            NSLayoutConstraint.activate([
+                hostingView.leadingAnchor.constraint(equalTo: button.leadingAnchor),
+                hostingView.trailingAnchor.constraint(equalTo: button.trailingAnchor),
+                hostingView.topAnchor.constraint(equalTo: button.topAnchor),
+                hostingView.bottomAnchor.constraint(equalTo: button.bottomAnchor)
+            ])
+            self.hostingView = hostingView
             button.action = #selector(togglePopover(_:))
             button.sendAction(on: [.leftMouseUp, .rightMouseUp])
-            
-            // Fetch menubar data only
-            viewModel.getContributions()
         }
-        
+
+        // Colors update on their own inside StatusItemView; only the size depends on these settings
+        updateBarItemWidth()
+        barItemObservation = Defaults.observe(keys: .daysBefore, .viewMode, .borders, options: []) { [weak self] in
+            DispatchQueue.main.async {
+                self?.updateBarItemWidth()
+            }
+        }
+
         timer = Timer.scheduledTimer(
                     timeInterval: Double(60 * 60),
                     target: self,
-                    selector: #selector(redrawBarItem),
+                    selector: #selector(refreshContributions),
                     userInfo: nil,
                     repeats: true
                 )
                 timer?.fire()
                 RunLoop.main.add(timer!, forMode: .common)
+    }
+
+    func barItemWidth() -> CGFloat {
+        let count = CGFloat(max(Defaults[.daysBefore], 1))
+        let padding: CGFloat = 16
+        if Defaults[.viewMode] == .week {
+            let borders = Defaults[.borders]
+            let cell: CGFloat = borders ? 2 : 3
+            let spacing: CGFloat = borders ? 1 : 0
+            return count * cell + (count - 1) * spacing + padding
+        }
+        return count * 16 + (count - 1) * 1 + padding
+    }
+
+    func updateBarItemWidth() {
+        statusBarItem.length = barItemWidth()
     }
     
     func migrateUserDefaults() {
@@ -109,23 +129,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     
     @objc
-    func redrawBarItem() {
-        if let button = statusBarItem.button {
-            button.subviews.removeAll()
-            viewModel.contributions.removeAll()
-            
-            let width = Defaults[.viewMode] == .week ? Defaults[.daysBefore]*3 + 20 : Defaults[.daysBefore] * 22 + 20
-            
-            button.frame = NSRect(x: 0, y: 0, width: width, height: 22)
-            
-            let hostingView = NSHostingView(rootView: itemView)
-            hostingView.frame = button.frame
-            button.addSubview(hostingView)
-            button.action = #selector(togglePopover(_:))
-            button.sendAction(on: [.leftMouseUp, .rightMouseUp])
-            
-            viewModel.getContributions()
-        }
+    func refreshContributions() {
+        viewModel.getContributions()
     }
     
     @objc func togglePopover(_ sender: AnyObject?) {
@@ -148,7 +153,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func showContextMenu() {
         let menu = NSMenu()
         
-        menu.addItem(NSMenuItem(title: "Refresh", action: #selector(redrawBarItem), keyEquivalent: "r"))
+        menu.addItem(NSMenuItem(title: "Refresh", action: #selector(refreshContributions), keyEquivalent: "r"))
         
         if let lastUpdate = viewModel.lastUpdateTime {
             let formatter = DateFormatter()
@@ -190,23 +195,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     
     // MARK: - Window Management
     
-    func openSettingsWindow() {
-        if preferencesWindow == nil {
-            let settingsView = SettingsView(appDelegate: self)
-            let hostingController = NSHostingController(rootView: settingsView)
-            
-            preferencesWindow = NSWindow(contentViewController: hostingController)
-            preferencesWindow.title = "Settings"
-            preferencesWindow.styleMask = [.titled, .closable, .resizable]
-            preferencesWindow.setContentSize(NSSize(width: 500, height: 600))
-            preferencesWindow.isReleasedWhenClosed = false
-            preferencesWindow.center()
-        }
-        
-        preferencesWindow.makeKeyAndOrderFront(nil)
-        NSApp.activate(ignoringOtherApps: true)
-    }
-    
     func openAboutWindow() {
         if aboutWindow == nil {
             let aboutView = AboutView()
@@ -215,7 +203,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             aboutWindow = NSWindow(contentViewController: hostingController)
             aboutWindow.title = "About StreakBar"
             aboutWindow.styleMask = [.titled, .closable]
-            aboutWindow.setContentSize(NSSize(width: 400, height: 400))
+            aboutWindow.setContentSize(NSSize(width: 400, height: 640))
             aboutWindow.isReleasedWhenClosed = false
             aboutWindow.center()
         }

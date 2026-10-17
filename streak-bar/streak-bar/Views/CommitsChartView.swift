@@ -8,132 +8,94 @@
 import Cocoa
 import SwiftUI
 import Charts
+import Accessibility
 import Defaults
 
-struct DayCommitData: Identifiable {
-    let id = UUID()
-    let date: Date
-    let commits: Int
-}
-
 struct StackedCommitData: Identifiable {
-    let id = UUID()
     let date: Date
     let repoCommits: [RepoCommit]
+
+    var id: Date { date }
+    var total: Int { repoCommits.reduce(0) { $0 + $1.count } }
 }
 
 struct RepoCommit: Identifiable {
-    let id = UUID()
     let repoName: String
     let count: Int
     let color: Color
+
+    var id: String { repoName }
+}
+
+struct RepoLegendItem: Identifiable {
+    let name: String
+    let color: Color
+    let commits: Int
+
+    var id: String { name }
+}
+
+/// Chart data for one calendar month. Days after today are listed in `futureDays` only.
+struct MonthChartModel {
+    let month: Date
+    let nextMonth: Date
+    let today: Date
+    let days: [StackedCommitData]
+    let futureDays: [Date]
+    let legend: [RepoLegendItem]
+
+    var totalCommits: Int { days.reduce(0) { $0 + $1.total } }
+    var maxDailyCommits: Int { days.map(\.total).max() ?? 0 }
+    var average: Double { days.isEmpty ? 0 : Double(totalCommits) / Double(days.count) }
+    var containsToday: Bool { today >= month && today < nextMonth }
+    var title: String { month.formatted(.dateTime.month(.wide).year()) }
 }
 
 struct CommitsChartView: View {
     @ObservedObject var viewModel: ViewModel
     var appDelegate: AppDelegate
+    @Binding var isShowingSettings: Bool
     @Environment(\.accessibilityReduceMotion) var reduceMotion
-    
-    // Track the offset in 21-day periods (0 = most recent, 1 = previous 21 days, etc.)
-    @State private var periodOffset: Int = 0
-    
+
+    // Months back from the current month (0 = current month)
+    @State private var monthOffset: Int = 0
+    @State private var navigationEdge: Edge = .trailing
+    @State private var selectedDate: Date?
+    @State private var hoveredRepo: String?
+    @State private var pinnedRepo: String?
+    @State private var isCelebrating = false
+
+    private let maxMonthsBack = 12
+    private let otherRepoName = "Other"
+    private let streakMilestones: Set<Int> = [7, 30, 100, 365]
+    private let avatarSize: CGFloat = 52
+
     var body: some View {
+        let model = makeMonthModel()
+
         VStack(spacing: 0) {
-            // Toolbar with navigation and hamburger menu
-            HStack(spacing: 12) {
-                // Navigation controls on the left
-                HStack(spacing: 8) {
-                    Button(action: { periodOffset += 1 }) {
-                        Image(systemName: "chevron.left")
-                            .font(.body)
-                            .frame(width: 28, height: 28)
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .disabled(!canNavigateBackward)
-                    .help("Previous 21 days")
-                    
-                    Text(dateRangeText)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .frame(minWidth: 100)
-                        .fixedSize()
-                    
-                    Button(action: { periodOffset = max(0, periodOffset - 1) }) {
-                        Image(systemName: "chevron.right")
-                            .font(.body)
-                            .frame(width: 28, height: 28)
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .disabled(periodOffset == 0)
-                    .help("Next 21 days")
-                    
-                    if periodOffset > 0 {
-                        Button(action: { periodOffset = 0 }) {
-                            Text("Today")
-                                .font(.caption)
-                                .fixedSize()
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
-                        .help("Return to current period")
-                    }
+            Group {
+                if viewModel.avatarUrl != nil {
+                    headerSection(model)
+                } else {
+                    skeletonHeaderSection
                 }
-                
-                Spacer()
-                
-                // Menu button on the right
-                Menu {
-                    Button("Settings...") {
-                        openSettings()
-                    }
-                    .keyboardShortcut(",", modifiers: .command)
-                    
-                    Button("About StreakBar") {
-                        openAbout()
-                    }
-                    
-                    Divider()
-                    
-                    Button("Quit") {
-                        NSApplication.shared.terminate(nil)
-                    }
-                    .keyboardShortcut("q", modifiers: .command)
-                } label: {
-                    Image(systemName: "line.3.horizontal")
-                        .font(.title3)
-                        .foregroundStyle(.secondary)
-                        .frame(width: 32, height: 32)
-                        .contentShape(Rectangle())
-                }
-                .menuStyle(.borderlessButton)
-                .menuIndicator(.hidden)
-                .fixedSize()
-                .accessibilityLabel("Menu")
             }
-            .padding(.horizontal, 16)
-            .padding(.top, 12)
-            .padding(.bottom, 8)
-            
+            .frame(height: 56) // Fixed height to prevent jumping
+            .padding(.horizontal, 20)
+            .padding(.top, 10)
+            .padding(.bottom, 12)
+
             Divider()
-            
-            // Main content - no scrolling
-            VStack(spacing: 20) {
-                // Stats section - only use skeleton before profile data has ever loaded
-                Group {
-                    if viewModel.avatarUrl != nil {
-                        statsSection
-                    } else {
-                        skeletonStatsSection
-                    }
-                }
-                .frame(height: 56) // Fixed height to prevent jumping
-                
-                // Chart section
-                chartSection
+
+            VStack(alignment: .leading, spacing: 12) {
+                monthNavigation(model)
+                chartSection(model)
             }
-            .padding(20)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
+
+            Spacer(minLength: 0)
         }
         .onAppear {
             // Fetch chart data when view appears (only if not already loaded)
@@ -141,181 +103,278 @@ struct CommitsChartView: View {
                 fetchChartData()
             }
         }
-        .onChange(of: periodOffset) { _ in
-            // Fetch more data when user navigates to a period we don't have yet
+        .onChange(of: monthOffset) { _ in
+            selectedDate = nil
+            pinnedRepo = nil
             fetchChartData()
         }
     }
-    
-    private var skeletonStatsSection: some View {
-        HStack(spacing: 16) {
-            // Avatar skeleton
+
+    // MARK: - Header
+
+    private var skeletonHeaderSection: some View {
+        HStack(spacing: 12) {
             Circle()
                 .fill(Color.gray.opacity(0.2))
-                .frame(width: 48, height: 48)
-
-            VStack(alignment: .leading, spacing: 4) {
+                .frame(width: avatarSize, height: avatarSize)
+            VStack(alignment: .leading, spacing: 6) {
                 RoundedRectangle(cornerRadius: 3)
                     .fill(Color.gray.opacity(0.2))
-                    .frame(width: 90, height: 13)
+                    .frame(width: 120, height: 13)
                 RoundedRectangle(cornerRadius: 3)
                     .fill(Color.gray.opacity(0.2))
-                    .frame(width: 60, height: 11)
+                    .frame(width: 80, height: 11)
+                RoundedRectangle(cornerRadius: 3)
+                    .fill(Color.gray.opacity(0.2))
+                    .frame(width: 150, height: 11)
             }
-
             Spacer()
-
-            // Stat rows skeleton
-            VStack(alignment: .trailing, spacing: 6) {
-                ForEach(0..<3, id: \.self) { _ in
-                    RoundedRectangle(cornerRadius: 3)
-                        .fill(Color.gray.opacity(0.2))
-                        .frame(width: 100, height: 12)
-                }
-            }
+            RoundedRectangle(cornerRadius: 6)
+                .fill(Color.gray.opacity(0.2))
+                .frame(width: 80, height: 48)
         }
-        .padding(.horizontal, 4)
         .shimmering(reduceMotion: reduceMotion)
         .accessibilityElement(children: .contain)
     }
 
-    private var statsSection: some View {
-        HStack(spacing: 16) {
-            // Avatar + username
-            HStack(spacing: 10) {
-                Group {
-                    if let urlString = viewModel.avatarUrl, let url = URL(string: urlString) {
-                        AsyncImage(url: url) { phase in
-                            switch phase {
-                            case .success(let image):
-                                image.resizable().scaledToFill()
-                            default:
-                                Circle().fill(Color.gray.opacity(0.2))
-                            }
-                        }
-                    } else {
+    private func headerSection(_ model: MonthChartModel) -> some View {
+        HStack(spacing: 12) {
+            avatar
+            profileDetails
+            Spacer(minLength: 8)
+            streakSummary
+        }
+    }
+
+    private var avatar: some View {
+        Group {
+            if let urlString = viewModel.avatarUrl, let url = URL(string: urlString) {
+                AsyncImage(url: url) { phase in
+                    switch phase {
+                    case .success(let image):
+                        image.resizable().scaledToFill()
+                    default:
                         Circle().fill(Color.gray.opacity(0.2))
                     }
                 }
-                .frame(width: 48, height: 48)
-                .clipShape(Circle())
+            } else {
+                Circle().fill(Color.gray.opacity(0.2))
+            }
+        }
+        .frame(width: avatarSize, height: avatarSize)
+        .clipShape(Circle())
+        .overlay(Circle().strokeBorder(Color.primary.opacity(0.1), lineWidth: 0.5))
+        .accessibilityHidden(true)
+    }
 
-                VStack(alignment: .leading, spacing: 2) {
-                    if let name = viewModel.userDisplayName, !name.isEmpty {
-                        Text(name)
-                            .font(.subheadline)
-                            .fontWeight(.semibold)
-                            .foregroundStyle(.primary)
-                            .lineLimit(1)
-                    }
-                    Text("@\(Defaults[.githubUsername])")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
+    private var profileDetails: some View {
+        VStack(alignment: .leading, spacing: 1) {
+            let login = "@\(Defaults[.githubUsername])"
+            if let name = viewModel.userDisplayName, !name.isEmpty {
+                Text(name)
+                    .font(.headline)
+                    .lineLimit(1)
+                Text(login)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            } else {
+                Text(login)
+                    .font(.headline)
+                    .lineLimit(1)
+            }
+            streakMessageRow
+                .padding(.top, 2)
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    private var streakSummary: some View {
+        VStack(alignment: .trailing, spacing: 0) {
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                Image(systemName: "flame.fill")
+                    .font(.title2)
+                    .foregroundStyle(
+                        currentStreak > 0
+                            ? AnyShapeStyle(LinearGradient(colors: [.yellow, .orange, .red], startPoint: .top, endPoint: .bottom))
+                            : AnyShapeStyle(.tertiary)
+                    )
+                    .scaleEffect(isCelebrating ? 1.3 : 1, anchor: .bottom)
+                Text("\(currentStreak)")
+                    .font(.system(size: 34, weight: .bold, design: .rounded))
+                    .monospacedDigit()
+                    .contentTransition(.numericText())
+                    .animation(reduceMotion ? nil : .default, value: currentStreak)
+            }
+            Text("day streak · best \(bestStreak)")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+        }
+        .fixedSize()
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Current streak: \(currentStreak) days. Best streak: \(bestStreak) days")
+        .onAppear(perform: celebrateMilestoneIfNeeded)
+        .onChange(of: currentStreak) { _ in celebrateMilestoneIfNeeded() }
+    }
+
+    @ViewBuilder
+    private var streakMessageRow: some View {
+        if let message = streakMessage {
+            Label(message.text, systemImage: message.symbol)
+                .font(.caption)
+                .foregroundStyle(message.tint)
+                .lineLimit(1)
+                .truncationMode(.tail)
+        }
+    }
+
+    // MARK: - Month Navigation
+
+    private func monthNavigation(_ model: MonthChartModel) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
+            Text(model.title)
+                .font(.title3)
+                .fontWeight(.semibold)
+                .accessibilityAddTraits(.isHeader)
+
+            if viewModel.contributionsByMonth[model.month] != nil {
+                Text("\(model.totalCommits) commits · \(String(format: "%.1f", model.average)) per day")
+                    .font(.subheadline)
+                    .monospacedDigit()
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .contentTransition(.numericText())
+                    .animation(reduceMotion ? nil : .default, value: model.totalCommits)
             }
 
             Spacer()
 
-            // Compact stats
-            VStack(alignment: .trailing, spacing: 5) {
-                compactStat(value: "\(totalCommits)", label: "commits")
-                compactStat(value: String(format: "%.1f", averageCommits), label: "per day")
-                compactStat(value: "\(currentStreak)d", label: "streak")
+            if monthOffset > 0 {
+                Button("Today") { navigate(to: 0) }
+                    .controlSize(.small)
+                    .keyboardShortcut("t", modifiers: .command)
+                    .help("Return to the current month (⌘T)")
             }
+
+            ControlGroup {
+                Button { navigate(to: monthOffset + 1) } label: {
+                    Image(systemName: "chevron.left")
+                }
+                .disabled(monthOffset >= maxMonthsBack)
+                .keyboardShortcut(.leftArrow, modifiers: [])
+                .help("Previous month (←)")
+                .accessibilityLabel("Previous month")
+
+                Button { navigate(to: monthOffset - 1) } label: {
+                    Image(systemName: "chevron.right")
+                }
+                .disabled(monthOffset == 0)
+                .keyboardShortcut(.rightArrow, modifiers: [])
+                .help("Next month (→)")
+                .accessibilityLabel("Next month")
+            }
+            .controlSize(.small)
+            .fixedSize()
         }
-        .padding(.horizontal, 4)
-        .accessibilityElement(children: .contain)
     }
 
-    private func compactStat(value: String, label: String) -> some View {
-        HStack(spacing: 4) {
-            Text(value)
-                .font(.subheadline)
-                .fontWeight(.semibold)
-                .foregroundStyle(.primary)
-            Text(label)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        }
-    }
-    
-    private var chartSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            switch viewModel.chartLoadingState {
-            case .idle:
-                skeletonChartView
-            case .loading:
-                skeletonChartView
-            case .success:
-                if stackedChartData.isEmpty {
-                    emptyStateView(message: "No commit data available for the last 21 days")
-                } else {
-                    VStack(spacing: 16) {
-                        stackedBarChart
-                        
-                        if !repositoryLegendItems.isEmpty {
-                            repositoryLegend
-                        }
+    // MARK: - Chart Section
+
+    @ViewBuilder
+    private func chartSection(_ model: MonthChartModel) -> some View {
+        Group {
+            if viewModel.contributionsByMonth[model.month] != nil {
+                Group {
+                    if model.totalCommits == 0 && !model.containsToday {
+                        emptyStateView(message: "No commits in \(model.month.formatted(.dateTime.month(.wide)))")
+                    } else {
+                        monthContent(model)
                     }
                 }
-            case .error(let message):
+                .id(model.month)
+                .transition(monthTransition)
+            } else if viewModel.chartMonth == model.month, case .error(let message) = viewModel.chartLoadingState {
                 errorStateView(message: message)
+            } else {
+                skeletonChartView
             }
         }
-        .padding(16)
-        .background(Color(nsColor: .controlBackgroundColor))
-        .cornerRadius(8)
+        .frame(maxWidth: .infinity, alignment: .topLeading)
+        .clipped()
     }
-    
-    // Fixed heights for the 21 skeleton bars — stable across re-renders
+
+    private func monthContent(_ model: MonthChartModel) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            selectionDetail(model)
+                .frame(height: 30, alignment: .topLeading)
+
+            stackedBarChart(model)
+
+            if !model.legend.isEmpty {
+                repositoryLegend(model)
+                    .padding(.top, 4)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func selectionDetail(_ model: MonthChartModel) -> some View {
+        if let selectedDate, let day = model.days.first(where: { $0.date == selectedDate }) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("\(day.date.formatted(.dateTime.weekday(.wide).month().day())) · \(day.total) \(day.total == 1 ? "commit" : "commits")")
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                Text(day.repoCommits.isEmpty ? "No commits" : day.repoCommits.map { "\(shortRepoName($0.repoName)) \($0.count)" }.joined(separator: " · "))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+        } else {
+            Text("Point at a day for details. Click to open it on GitHub.")
+                .font(.caption)
+                .foregroundStyle(.tertiary)
+        }
+    }
+
+    // Fixed heights for the skeleton bars — stable across re-renders
     private let skeletonBarHeights: [CGFloat] = [
-        80, 120, 60, 150, 90, 180, 70, 110, 140, 55,
-        160, 95, 130, 75, 100, 170, 85, 120, 65, 145, 90
+        80, 120, 60, 150, 90, 160, 70, 110, 140, 55,
+        150, 95, 130, 75, 100, 155, 85, 120, 65, 145, 90
     ]
 
     private var skeletonChartView: some View {
-        VStack(spacing: 16) {
-            // Skeleton chart bars
+        VStack(alignment: .leading, spacing: 16) {
             HStack(alignment: .bottom, spacing: 4) {
-                ForEach(0..<21, id: \.self) { i in
+                ForEach(0..<skeletonBarHeights.count, id: \.self) { i in
                     RoundedRectangle(cornerRadius: 2)
                         .fill(Color.gray.opacity(0.2))
                         .frame(height: skeletonBarHeights[i])
                 }
             }
-            .frame(height: 200)
-            .redacted(reason: .placeholder)
-            .shimmering(reduceMotion: reduceMotion)
-            
-            // Skeleton legend
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Repositories")
-                    .font(.caption)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(.secondary)
-                
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 150), spacing: 12)], alignment: .leading, spacing: 8) {
-                    ForEach(0..<4, id: \.self) { _ in
-                        HStack(spacing: 6) {
-                            RoundedRectangle(cornerRadius: 3)
-                                .fill(Color.gray.opacity(0.2))
-                                .frame(width: 12, height: 12)
-                            
-                            RoundedRectangle(cornerRadius: 3)
-                                .fill(Color.gray.opacity(0.2))
-                                .frame(width: 100, height: 12)
-                        }
+            .frame(height: 160, alignment: .bottom)
+            .padding(.top, 38)
+
+            VStack(alignment: .leading, spacing: 10) {
+                ForEach(0..<4, id: \.self) { _ in
+                    HStack(spacing: 8) {
+                        Circle()
+                            .fill(Color.gray.opacity(0.2))
+                            .frame(width: 8, height: 8)
+                        RoundedRectangle(cornerRadius: 3)
+                            .fill(Color.gray.opacity(0.2))
+                            .frame(width: 140, height: 12)
+                        Spacer()
+                        RoundedRectangle(cornerRadius: 3)
+                            .fill(Color.gray.opacity(0.2))
+                            .frame(width: 24, height: 12)
                     }
+                    .padding(.horizontal, 8)
                 }
             }
-            .padding(12)
-            .background(Color(nsColor: .controlBackgroundColor).opacity(0.5))
-            .cornerRadius(6)
-            .frame(maxHeight: 180)
-            .redacted(reason: .placeholder)
-            .shimmering(reduceMotion: reduceMotion)
         }
+        .shimmering(reduceMotion: reduceMotion)
+        .accessibilityLabel("Loading contributions")
     }
     
     private func emptyStateView(message: String, isError: Bool = false) -> some View {
@@ -341,8 +400,7 @@ struct CommitsChartView: View {
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 24)
             
-            // Show action button if it's a configuration issue
-            if message.contains("token") || message.contains("username") || message.contains("Settings") {
+            if viewModel.chartErrorRequiresSignIn {
                 Button(action: openSettings) {
                     HStack(spacing: 6) {
                         Image(systemName: "gearshape")
@@ -358,235 +416,238 @@ struct CommitsChartView: View {
         .frame(maxWidth: .infinity, minHeight: 200)
     }
     
-    private var stackedBarChart: some View {
-        Chart {
-            ForEach(stackedChartData) { dayData in
-                if dayData.repoCommits.isEmpty {
-                    // Show a zero-height bar for days with no commits
+    private func stackedBarChart(_ model: MonthChartModel) -> some View {
+        let yMax = max(Double(model.maxDailyCommits), model.average, 4)
+
+        return Chart {
+            if model.containsToday {
+                RectangleMark(x: .value("Date", model.today, unit: .day))
+                    .foregroundStyle(Color.accentColor.opacity(0.1))
+            }
+
+            ForEach(model.days) { day in
+                ForEach(day.repoCommits) { repoCommit in
                     BarMark(
-                        x: .value("Date", dayData.date, unit: .day),
-                        y: .value("Commits", 0)
+                        x: .value("Date", day.date, unit: .day),
+                        y: .value("Commits", repoCommit.count)
                     )
-                    .foregroundStyle(.clear)
-                } else {
-                    ForEach(dayData.repoCommits) { repoCommit in
-                        BarMark(
-                            x: .value("Date", dayData.date, unit: .day),
-                            y: .value("Commits", repoCommit.count)
-                        )
-                        .foregroundStyle(repoCommit.color)
-                    }
+                    .foregroundStyle(repoCommit.color)
+                    .cornerRadius(2)
+                    .opacity(barOpacity(date: day.date, repoName: repoCommit.repoName))
                 }
             }
+
+            // Placeholders for the rest of the current month
+            ForEach(model.futureDays, id: \.self) { day in
+                PointMark(
+                    x: .value("Date", day, unit: .day),
+                    y: .value("Commits", 0)
+                )
+                .symbolSize(10)
+                .foregroundStyle(Color.secondary.opacity(0.4))
+            }
+
+            if model.average > 0 {
+                RuleMark(y: .value("Average", model.average))
+                    .lineStyle(StrokeStyle(lineWidth: 1, dash: [3, 3]))
+                    .foregroundStyle(Color.secondary.opacity(0.6))
+            }
         }
-        .frame(height: 200)
+        .frame(height: 160)
+        .chartXScale(domain: model.month...model.nextMonth)
+        .chartYScale(domain: 0...yMax)
         .chartXAxis {
-            AxisMarks(values: .stride(by: .day, count: 5))
+            AxisMarks(values: weekAxisDates(model)) { _ in
+                AxisValueLabel(format: .dateTime.day())
+            }
         }
         .chartYAxis {
-            AxisMarks()
+            AxisMarks(position: .leading, values: .automatic(desiredCount: 3)) { _ in
+                AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5))
+                AxisValueLabel()
+            }
         }
         .chartLegend(.hidden)
-        .accessibilityLabel("Commits by repository over last 21 days")
-        .accessibilityValue("\(totalCommits) total commits")
-    }
-    
-    private var simpleBarChart: some View {
-        Chart {
-            ForEach(chartData) { dayData in
-                BarMark(
-                    x: .value("Date", dayData.date, unit: .day),
-                    y: .value("Commits", dayData.commits)
-                )
-                .foregroundStyle(.blue)
-            }
-        }
-        .frame(height: 200)
-        .chartXAxis {
-            AxisMarks(values: .stride(by: .day, count: 5))
-        }
-        .chartYAxis {
-            AxisMarks()
-        }
-        .accessibilityLabel("Commits over last 21 days")
-        .accessibilityValue("\(chartData.reduce(0) { $0 + $1.commits }) total commits")
-    }
-    
-    private var repositoryLegend: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Repositories")
-                .font(.caption)
-                .fontWeight(.semibold)
-                .foregroundStyle(.secondary)
-            
-            ScrollView {
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 150), spacing: 12)], alignment: .leading, spacing: 8) {
-                    ForEach(repositoryLegendItems, id: \.name) { item in
-                        HStack(spacing: 6) {
-                            RoundedRectangle(cornerRadius: 3)
-                                .fill(item.color)
-                                .frame(width: 12, height: 12)
-                            
-                            Text(item.name)
-                                .font(.caption)
-                                .foregroundStyle(.primary)
-                                .lineLimit(1)
-                            
-                            Text("(\(item.commits))")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+        .chartOverlay { proxy in
+            GeometryReader { geometry in
+                Rectangle()
+                    .fill(.clear)
+                    .contentShape(Rectangle())
+                    .onContinuousHover { phase in
+                        switch phase {
+                        case .active(let location):
+                            selectedDate = day(at: location, proxy: proxy, geometry: geometry, model: model)
+                        case .ended:
+                            selectedDate = nil
                         }
                     }
-                }
-            }
-            .frame(maxHeight: 180)
-        }
-        .padding(12)
-        .background(Color(nsColor: .controlBackgroundColor).opacity(0.5))
-        .cornerRadius(6)
-    }
-    
-    // MARK: - Computed Properties
-    
-    private var canNavigateBackward: Bool {
-        // Always allow navigating backward - we'll fetch more data as needed
-        // You could add a reasonable limit here if desired (e.g., max 365 days)
-        let maxPeriodsBack = 17 // ~1 year (17 * 21 = 357 days)
-        return periodOffset < maxPeriodsBack
-    }
-    
-    private var dateRangeText: String {
-        let calendar = Calendar.current
-        let today = calendar.startOfDay(for: Date())
-        
-        // Calculate the start date based on periodOffset
-        let offsetDays = periodOffset * 21
-        guard let endDate = calendar.date(byAdding: .day, value: -offsetDays, to: today),
-              let startDate = calendar.date(byAdding: .day, value: -20, to: endDate) else {
-            return "Last 21 Days"
-        }
-        
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MMM d"
-        
-        if periodOffset == 0 {
-            return "Last 21 Days"
-        } else {
-            return "\(formatter.string(from: startDate)) - \(formatter.string(from: endDate))"
-        }
-    }
-    
-    private var stackedChartData: [StackedCommitData] {
-        // Get date range for last 21 days
-        let calendar = Calendar.current
-        let today = calendar.startOfDay(for: Date())
-        let dateFormatter = ISO8601DateFormatter()
-        dateFormatter.formatOptions = [.withInternetDateTime]
-        
-        var dateToRepoCommits: [Date: [String: Int]] = [:]
-        var allRepoNames = Set<String>()
-        
-        // Process all repository contributions
-        for repoData in viewModel.contributionsByRepo {
-            let repoName = "\(repoData.repository.owner.login)/\(repoData.repository.name)"
-            allRepoNames.insert(repoName)
-            
-            for contribution in repoData.contributions.nodes {
-                if let date = dateFormatter.date(from: contribution.occurredAt) {
-                    let dayStart = calendar.startOfDay(for: date)
-                    
-                    if dateToRepoCommits[dayStart] == nil {
-                        dateToRepoCommits[dayStart] = [:]
-                    }
-                    dateToRepoCommits[dayStart]?[repoName] = contribution.commitCount
-                }
+                    .gesture(
+                        SpatialTapGesture().onEnded { value in
+                            if let date = day(at: value.location, proxy: proxy, geometry: geometry, model: model) {
+                                openDayOnGitHub(date)
+                            }
+                        }
+                    )
             }
         }
-        
-        // Assign colors to repositories (sorted for consistency)
-        let repoColors = assignColorsToRepos(Array(allRepoNames).sorted())
-        
-        // Calculate the base date for this period
-        let baseDaysOffset = periodOffset * 21
-        
-        // Create data for 21 days based on the period offset
-        var result: [StackedCommitData] = []
-        for dayOffset in (0..<21).reversed() {
-            let totalOffset = baseDaysOffset + dayOffset
-            if let date = calendar.date(byAdding: .day, value: -totalOffset, to: today) {
-                let repoCommits = (dateToRepoCommits[date] ?? [:])
-                    .map { repoName, count in
-                        RepoCommit(repoName: repoName, count: count, color: repoColors[repoName] ?? .gray)
-                    }
-                    .sorted { $0.repoName < $1.repoName }
-                
-                result.append(StackedCommitData(date: date, repoCommits: repoCommits))
-            }
-        }
-        
-        return result
+        .accessibilityChartDescriptor(MonthChartDescriptor(model: model))
     }
-    
-    private func assignColorsToRepos(_ repoNames: [String]) -> [String: Color] {
-        let predefinedColors: [Color] = [
-            .blue, .green, .orange, .purple, .pink,
-            .red, .yellow, .cyan, .mint, .indigo
-        ]
-        
-        var result: [String: Color] = [:]
-        for (index, repoName) in repoNames.enumerated() {
-            result[repoName] = predefinedColors[index % predefinedColors.count]
-        }
-        return result
-    }
-    
-    private var repositoryLegendItems: [(name: String, color: Color, commits: Int)] {
-        var repoInfo: [String: (color: Color, commits: Int)] = [:]
 
-        // Derive totals and colors directly from stackedChartData so both
-        // chart bars and legend always use the same color assignment.
-        for dayData in stackedChartData {
-            for repoCommit in dayData.repoCommits {
-                let existing = repoInfo[repoCommit.repoName]
-                repoInfo[repoCommit.repoName] = (
-                    color: existing?.color ?? repoCommit.color,
-                    commits: (existing?.commits ?? 0) + repoCommit.count
+    private func repositoryLegend(_ model: MonthChartModel) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            ForEach(model.legend) { item in
+                HStack(spacing: 8) {
+                    Circle()
+                        .fill(item.color)
+                        .frame(width: 8, height: 8)
+                    Text(item.name)
+                        .font(.callout)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                    Spacer(minLength: 8)
+                    Text("\(item.commits)")
+                        .font(.callout)
+                        .monospacedDigit()
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.horizontal, 8)
+                .frame(height: 22)
+                .background(
+                    RoundedRectangle(cornerRadius: 5)
+                        .fill(focusedRepo == item.name ? Color.primary.opacity(0.08) : .clear)
                 )
+                .contentShape(Rectangle())
+                .onHover { isHovering in
+                    if isHovering {
+                        hoveredRepo = item.name
+                    } else if hoveredRepo == item.name {
+                        hoveredRepo = nil
+                    }
+                }
+                .onTapGesture {
+                    pinnedRepo = pinnedRepo == item.name ? nil : item.name
+                }
+                .accessibilityElement(children: .combine)
+                .accessibilityAddTraits(pinnedRepo == item.name ? [.isButton, .isSelected] : .isButton)
+                .accessibilityHint("Highlights this repository in the chart")
+            }
+        }
+    }
+
+    // MARK: - Computed Properties
+
+    private var displayedMonth: Date {
+        let calendar = Calendar.current
+        let currentMonth = calendar.startOfMonth(for: Date())
+        return calendar.date(byAdding: .month, value: -monthOffset, to: currentMonth) ?? currentMonth
+    }
+
+    private var focusedRepo: String? {
+        hoveredRepo ?? pinnedRepo
+    }
+
+    private var monthTransition: AnyTransition {
+        guard !reduceMotion else { return .opacity }
+        let removalEdge: Edge = navigationEdge == .leading ? .trailing : .leading
+        return .asymmetric(
+            insertion: .move(edge: navigationEdge).combined(with: .opacity),
+            removal: .move(edge: removalEdge).combined(with: .opacity)
+        )
+    }
+
+    private func makeMonthModel() -> MonthChartModel {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        let month = displayedMonth
+        let nextMonth = calendar.date(byAdding: .month, value: 1, to: month) ?? month
+        let dateFormatter = ISO8601DateFormatter()
+
+        var dayRepoCounts: [Date: [String: Int]] = [:]
+        var repoTotals: [String: Int] = [:]
+
+        for repoData in viewModel.contributionsByMonth[month] ?? [] {
+            let repoName = "\(repoData.repository.owner.login)/\(repoData.repository.name)"
+            for contribution in repoData.contributions.nodes {
+                guard let date = dateFormatter.date(from: contribution.occurredAt) else { continue }
+                let day = calendar.startOfDay(for: date)
+                guard day >= month, day < nextMonth else { continue }
+                dayRepoCounts[day, default: [:]][repoName, default: 0] += contribution.commitCount
+                repoTotals[repoName, default: 0] += contribution.commitCount
             }
         }
 
-        return repoInfo
-            .map { (name: $0.key, color: $0.value.color, commits: $0.value.commits) }
-            .sorted { $0.commits > $1.commits }
+        // Top repositories keep their own color; the rest are grouped as "Other"
+        let ranked = repoTotals.sorted { $0.value != $1.value ? $0.value > $1.value : $0.key < $1.key }
+        let namedCount = ranked.count > 6 ? 5 : ranked.count
+        let namedRepos = ranked.prefix(namedCount).map(\.key)
+        let colors = RepoColors.assign(namedRepos)
+
+        var legend = namedRepos.map { RepoLegendItem(name: $0, color: colors[$0] ?? .gray, commits: repoTotals[$0] ?? 0) }
+        let otherTotal = ranked.dropFirst(namedCount).reduce(0) { $0 + $1.value }
+        if otherTotal > 0 {
+            legend.append(RepoLegendItem(name: otherRepoName, color: .gray, commits: otherTotal))
+        }
+
+        var days: [StackedCommitData] = []
+        var futureDays: [Date] = []
+        var day = month
+        while day < nextMonth {
+            if day > today {
+                futureDays.append(day)
+            } else {
+                var grouped: [String: Int] = [:]
+                for (repoName, count) in dayRepoCounts[day] ?? [:] {
+                    grouped[colors[repoName] != nil ? repoName : otherRepoName, default: 0] += count
+                }
+                let repoCommits = legend.compactMap { item in
+                    grouped[item.name].map { RepoCommit(repoName: item.name, count: $0, color: item.color) }
+                }
+                days.append(StackedCommitData(date: day, repoCommits: repoCommits))
+            }
+            guard let next = calendar.date(byAdding: .day, value: 1, to: day) else { break }
+            day = next
+        }
+
+        return MonthChartModel(month: month, nextMonth: nextMonth, today: today, days: days, futureDays: futureDays, legend: legend)
     }
-    
-    private var totalCommits: Int {
-        stackedChartData.reduce(0) { total, dayData in
-            total + dayData.repoCommits.reduce(0) { $0 + $1.count }
+
+    /// Midday of days 1, 8, 15, 22 and 29 so labels sit under their bars
+    private func weekAxisDates(_ model: MonthChartModel) -> [Date] {
+        let calendar = Calendar.current
+        return stride(from: 0, to: 29, by: 7).compactMap { offset in
+            guard let day = calendar.date(byAdding: .day, value: offset, to: model.month), day < model.nextMonth else { return nil }
+            return day.addingTimeInterval(12 * 60 * 60)
         }
     }
 
-    private var chartData: [DayCommitData] {
-        stackedChartData.map { dayData in
-            DayCommitData(
-                date: dayData.date,
-                commits: dayData.repoCommits.reduce(0) { $0 + $1.count }
-            )
-        }
+    private func day(at location: CGPoint, proxy: ChartProxy, geometry: GeometryProxy, model: MonthChartModel) -> Date? {
+        let origin = geometry[proxy.plotAreaFrame].origin
+        guard let date: Date = proxy.value(atX: location.x - origin.x) else { return nil }
+        let day = Calendar.current.startOfDay(for: date)
+        guard day >= model.month, day < model.nextMonth, day <= model.today else { return nil }
+        return day
     }
-    
-    private var averageCommits: Double {
-        guard !stackedChartData.isEmpty else { return 0 }
-        return Double(totalCommits) / Double(stackedChartData.count)
+
+    private func barOpacity(date: Date, repoName: String) -> Double {
+        if let focusedRepo, focusedRepo != repoName { return 0.25 }
+        if let selectedDate, selectedDate != date { return 0.4 }
+        return 1
     }
-    
+
+    private func shortRepoName(_ repoName: String) -> String {
+        repoName.split(separator: "/").last.map(String.init) ?? repoName
+    }
+
     private var currentStreak: Int {
         // Use allContributionDays (full year) so the streak is not capped by the menubar display window
-        let allDays = viewModel.allContributionDays
-        guard !allDays.isEmpty else { return 0 }
-        
+        var days = viewModel.allContributionDays[...]
+        // Today is still in progress, so no contributions yet doesn't break the streak
+        if let today = days.last, today.contributionCount == 0 {
+            days = days.dropLast()
+        }
+
         var streak = 0
-        for day in allDays.reversed() {
+        for day in days.reversed() {
             if day.contributionCount > 0 {
                 streak += 1
             } else {
@@ -595,21 +656,150 @@ struct CommitsChartView: View {
         }
         return streak
     }
-    
+
+    private var bestStreak: Int {
+        var best = 0
+        var run = 0
+        for day in viewModel.allContributionDays {
+            run = day.contributionCount > 0 ? run + 1 : 0
+            best = max(best, run)
+        }
+        return best
+    }
+
+    private var hasContributedToday: Bool {
+        (viewModel.allContributionDays.last?.contributionCount ?? 0) > 0
+    }
+
+    private var isStreakMilestone: Bool {
+        streakMilestones.contains(currentStreak)
+    }
+
+    private var streakMessage: (text: String, symbol: String, tint: Color)? {
+        guard !viewModel.allContributionDays.isEmpty else { return nil }
+        if isStreakMilestone {
+            return ("\(currentStreak)-day milestone!", "star.fill", .orange)
+        }
+        if hasContributedToday {
+            return ("Contributed today", "checkmark.circle.fill", .green)
+        }
+        if currentStreak > 0 {
+            return ("Contribute today to keep it", "clock", .secondary)
+        }
+        return ("Contribute today to start one", "sparkles", .secondary)
+    }
+
     // MARK: - Actions
-    
+
     private func fetchChartData() {
-        // Calculate how many days we need based on periodOffset
-        let daysNeeded = (periodOffset + 1) * 21
-        viewModel.getContributionsByRepository(days: daysNeeded)
+        viewModel.getContributionsByRepository(monthStart: displayedMonth)
     }
-    
+
+    private func navigate(to offset: Int) {
+        let target = min(max(offset, 0), maxMonthsBack)
+        guard target != monthOffset else { return }
+        // Set the direction first so the outgoing month uses the matching transition
+        navigationEdge = target > monthOffset ? .leading : .trailing
+        DispatchQueue.main.async {
+            withAnimation(reduceMotion ? .easeInOut(duration: 0.2) : .spring(response: 0.35, dampingFraction: 0.9)) {
+                monthOffset = target
+            }
+        }
+    }
+
+    private func celebrateMilestoneIfNeeded() {
+        guard isStreakMilestone, !reduceMotion else { return }
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.35)) {
+            isCelebrating = true
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.6)) {
+                isCelebrating = false
+            }
+        }
+    }
+
+    private func openDayOnGitHub(_ date: Date) {
+        let username = Defaults[.githubUsername]
+        guard !username.isEmpty else { return }
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        let day = formatter.string(from: date)
+        if let url = URL(string: "https://github.com/\(username)?tab=overview&from=\(day)&to=\(day)") {
+            NSWorkspace.shared.open(url)
+        }
+    }
+
     private func openSettings() {
-        appDelegate.openSettingsWindow()
+        isShowingSettings = true
     }
-    
-    private func openAbout() {
-        appDelegate.openAboutWindow()
+}
+
+// MARK: - Repository Colors
+
+private enum RepoColors {
+    static let palette: [Color] = [
+        .blue, .green, .orange, .purple, .pink,
+        .teal, .indigo, .mint, .red, .yellow
+    ]
+
+    /// Picks each repository's color from a hash of its name so it stays the same across months.
+    /// Collisions move to the next free color.
+    static func assign(_ repoNames: [String]) -> [String: Color] {
+        var used = Set<Int>()
+        var result: [String: Color] = [:]
+        for repoName in repoNames.prefix(palette.count) {
+            var index = stableHash(repoName) % palette.count
+            while used.contains(index) {
+                index = (index + 1) % palette.count
+            }
+            used.insert(index)
+            result[repoName] = palette[index]
+        }
+        return result
+    }
+
+    // djb2; String.hashValue is randomized per launch
+    private static func stableHash(_ string: String) -> Int {
+        var hash: UInt64 = 5381
+        for byte in string.utf8 {
+            hash = (hash &* 33) &+ UInt64(byte)
+        }
+        return Int(hash % UInt64(Int.max))
+    }
+}
+
+// MARK: - VoiceOver Chart Description
+
+private struct MonthChartDescriptor: AXChartDescriptorRepresentable {
+    let model: MonthChartModel
+
+    func makeChartDescriptor() -> AXChartDescriptor {
+        let labels = model.days.map { $0.date.formatted(.dateTime.month().day()) }
+        let xAxis = AXCategoricalDataAxisDescriptor(title: "Day", categoryOrder: labels)
+        let yAxis = AXNumericDataAxisDescriptor(
+            title: "Commits",
+            range: 0...Double(max(model.maxDailyCommits, 1)),
+            gridlinePositions: []
+        ) { value in "\(Int(value)) commits" }
+
+        let dataPoints = zip(model.days, labels).map { day, label in
+            AXDataPoint(
+                x: label,
+                y: Double(day.total),
+                label: day.repoCommits.map { "\($0.repoName) \($0.count)" }.joined(separator: ", ")
+            )
+        }
+        let series = AXDataSeriesDescriptor(name: "Commits", isContinuous: false, dataPoints: dataPoints)
+
+        return AXChartDescriptor(
+            title: "Commits in \(model.title)",
+            summary: "\(model.totalCommits) commits, \(String(format: "%.1f", model.average)) per day on average",
+            xAxis: xAxis,
+            yAxis: yAxis,
+            additionalAxes: [],
+            series: [series]
+        )
     }
 }
 
