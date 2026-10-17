@@ -47,6 +47,7 @@ class ViewModel: ObservableObject {
                     self.contributions = payload.weeks
                     self.avatarUrl = payload.avatarUrl
                     self.userDisplayName = payload.displayName
+                    Defaults[.githubUsername] = payload.login
                     self.loadingState = .success
                     self.lastUpdateTime = Date()
                 case .failure(let error):
