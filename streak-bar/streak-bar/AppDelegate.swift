@@ -27,7 +27,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.setActivationPolicy(.accessory)
         
         migrateUserDefaults()
-        setupMenu()
 
         contentView = ContentView(appDelegate: self)
 
@@ -96,23 +95,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             Defaults[.emptyDayTransparency] = oldValue
             UserDefaults.standard.removeObject(forKey: "transparency")
         }
-    }
-    
-    func setupMenu() {
-        let mainMenu = NSMenu()
-        
-        // App menu
-        let appMenuItem = NSMenuItem()
-        mainMenu.addItem(appMenuItem)
-        
-        let appMenu = NSMenu()
-        appMenuItem.submenu = appMenu
-        
-        appMenu.addItem(NSMenuItem(title: "About StreakBar", action: #selector(showAbout), keyEquivalent: ""))
-        appMenu.addItem(NSMenuItem.separator())
-        appMenu.addItem(NSMenuItem(title: "Quit StreakBar", action: #selector(quit), keyEquivalent: "q"))
-        
-        NSApp.mainMenu = mainMenu
     }
     
     @objc func showAbout() {

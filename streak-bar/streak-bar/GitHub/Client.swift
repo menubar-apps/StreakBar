@@ -67,8 +67,14 @@ public class Client {
                 switch response.result {
                 case .success(let resp):
                     let user = resp.data.viewer
+                    var weeks = user.contributionsCollection.contributionCalendar.weeks
+                    #if DEBUG
+                    if MockData.isEnabled {
+                        weeks = MockData.weeks(from: from)
+                    }
+                    #endif
                     completion(.success((
-                        weeks: user.contributionsCollection.contributionCalendar.weeks,
+                        weeks: weeks,
                         avatarUrl: user.avatarUrl,
                         displayName: user.name,
                         login: user.login
@@ -100,6 +106,13 @@ public class Client {
             completion(.failure(.missingToken))
             return
         }
+
+        #if DEBUG
+        if MockData.isEnabled {
+            completion(.success(MockData.repositories(from: from, to: to, maxRepos: maxRepos)))
+            return
+        }
+        #endif
 
         let headers: HTTPHeaders = [
             .authorization(bearerToken: githubToken),
