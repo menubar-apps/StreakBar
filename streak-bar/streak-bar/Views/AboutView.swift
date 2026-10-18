@@ -12,7 +12,7 @@ struct AboutView: View {
     
     let currentVersion = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "Unknown"
     var currentYear: Int { Calendar.current.component(.year, from: Date()) }
-    
+
     var body: some View {
         ScrollView {
             VStack(spacing: 24) {
@@ -102,6 +102,7 @@ struct AboutView: View {
                 }
                 .padding(.horizontal, 40)
                 
+                #if DIRECT_DISTRIBUTION
                 // Buy Me a Coffee
                 Link(destination: URL(string: "https://buymeacoffee.com/streetturtle")!) {
                     HStack(spacing: 8) {
@@ -119,7 +120,13 @@ struct AboutView: View {
                 .padding(.horizontal, 40)
                 .help("Support StreakBar development")
                 .accessibilityLabel("Buy me a coffee to support development")
-                
+                #endif
+
+                Divider()
+                    .padding(.horizontal, 40)
+
+                AppPromotionView()
+
                 // Credits
                 VStack(spacing: 4) {
                     Text("Created by Pavel Makhov")
