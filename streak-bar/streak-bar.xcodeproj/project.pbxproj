@@ -15,6 +15,7 @@
 
 /* Begin PBXFileReference section */
 		76240ECE2AA02A830098ADB7 /* streak-bar.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "streak-bar.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		76F03C302F6EE00600D2A16C /* Version.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Version.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -39,6 +40,7 @@
 		76240EC52AA02A830098ADB7 = {
 			isa = PBXGroup;
 			children = (
+				76F03C302F6EE00600D2A16C /* Version.xcconfig */,
 				76F03C242F6EE00600D2A16C /* streak-bar */,
 				76240ECF2AA02A830098ADB7 /* Products */,
 			);
@@ -256,6 +258,7 @@
 		};
 		76240EDE2AA02A840098ADB7 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 76F03C302F6EE00600D2A16C /* Version.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -275,7 +278,6 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.5;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.pavelmakhov.streak-bar";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -285,6 +287,7 @@
 		};
 		76240EDF2AA02A840098ADB7 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 76F03C302F6EE00600D2A16C /* Version.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -304,7 +307,6 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.5;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.pavelmakhov.streak-bar";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -368,6 +370,7 @@
 		};
 		76240EE12AA02A840098ADB7 /* Release-Direct */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 76F03C302F6EE00600D2A16C /* Version.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -387,7 +390,6 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.5;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.pavelmakhov.streak-bar";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;

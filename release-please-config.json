@@ -1,0 +1,14 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "bootstrap-sha": "aa2e062d6d3c6bc2c4e239b86153471ea7ef5d05",
+  "packages": {
+    ".": {
+      "release-type": "simple",
+      "package-name": "StreakBar",
+      "include-component-in-tag": false,
+      "draft": true,
+      "force-tag-creation": true,
+      "extra-files": ["streak-bar/Version.xcconfig"]
+    }
+  }
+}
