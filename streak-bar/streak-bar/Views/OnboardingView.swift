@@ -12,7 +12,6 @@ struct OnboardingView: View {
     @Binding var isPresented: Bool
     var onComplete: (() -> Void)? = nil
     @State private var currentPage = 0
-    @Default(.githubUsername) var githubUsername
     @Default(.theme) var selectedTheme
     @Environment(\.accessibilityReduceMotion) var reduceMotion
     
@@ -107,21 +106,15 @@ struct OnboardingView: View {
                 .foregroundStyle(.blue)
             
             VStack(spacing: 16) {
-                Text("Enter Your GitHub Username")
+                Text("Connect Your GitHub Account")
                     .font(.title2)
                     .fontWeight(.semibold)
-                
-                Text("We'll fetch your contribution history and display it in the menu bar")
+
+                Text("After setup, sign in with GitHub in Settings. We'll fetch your contribution history and display it in the menu bar")
                     .font(.body)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
                     .frame(maxWidth: 350)
-                
-                TextField("GitHub username", text: $githubUsername)
-                    .textFieldStyle(.roundedBorder)
-                    .frame(width: 250)
-                    .font(.title3)
-                    .multilineTextAlignment(.center)
             }
             
             Spacer()

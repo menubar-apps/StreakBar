@@ -21,9 +21,11 @@ class ViewModel: ObservableObject {
 
     @Published var contributions: [ContributionWeek] = []
     @Published var allContributionDays: [ContributionDay] = [] // Full year window for streak calc
-    @Published var contributionsByRepo: [CommitContributionsByRepository] = []
+    @Published var contributionsByMonth: [Date: [CommitContributionsByRepository]] = [:] // Keyed by first day of month
+    @Published var chartMonth: Date = Calendar.current.startOfMonth(for: Date())
     @Published var loadingState: LoadingState = .idle
     @Published var chartLoadingState: LoadingState = .idle
+    @Published var chartErrorRequiresSignIn = false
     @Published var lastUpdateTime: Date?
     @Published var avatarUrl: String?
     @Published var userDisplayName: String?
@@ -31,40 +33,43 @@ class ViewModel: ObservableObject {
     init() {
     }
     
-    // For menubar - fetches based on user settings
+    // Fetches a full year, which covers both the menubar window (max 50 weeks) and the streak calculation
     func getContributions() {
-        loadingState = .loading
-        
-        let multiplier = Defaults[.viewMode] == .week ? 7 : 1
-        let menubarDays = Defaults[.daysBefore] * multiplier
-        
-        let fromDate = getDateNDaysBeforeToday(n: menubarDays)
-        
-        client.getContributions(from: fromDate) { result in
+        if contributions.isEmpty {
+            loadingState = .loading
+        }
+
+        let yearAgo = getDateNDaysBeforeToday(n: 365)
+        client.getContributions(from: yearAgo) { result in
             DispatchQueue.main.async {
                 switch result {
                 case .success(let payload):
                     self.contributions = payload.weeks
+                    self.allContributionDays = payload.weeks.flatMap { $0.contributionDays }
                     self.avatarUrl = payload.avatarUrl
                     self.userDisplayName = payload.displayName
+                    Defaults[.githubUsername] = payload.login
                     self.loadingState = .success
                     self.lastUpdateTime = Date()
                 case .failure(let error):
-                    self.contributions = [ContributionWeek(contributionDays: [])]
+                    self.contributions = []
                     self.loadingState = .error(error.userMessage)
                 }
             }
         }
-        
-        // Always fetch a full year separately to power accurate streak calculation
-        let yearAgo = getDateNDaysBeforeToday(n: 365)
-        client.getContributions(from: yearAgo) { result in
-            DispatchQueue.main.async {
-                if case .success(let payload) = result {
-                    self.allContributionDays = payload.weeks.flatMap { $0.contributionDays }
-                }
-            }
-        }
+    }
+
+    // Clears everything tied to the signed-in account
+    func resetAccountData() {
+        contributions = []
+        allContributionDays = []
+        contributionsByMonth = [:]
+        avatarUrl = nil
+        userDisplayName = nil
+        lastUpdateTime = nil
+        loadingState = .idle
+        chartLoadingState = .idle
+        chartErrorRequiresSignIn = false
     }
     
     func getDateNDaysBeforeToday(n: Int) -> Date {
@@ -75,24 +80,43 @@ class ViewModel: ObservableObject {
         return calendar.date(byAdding: dateComponent, to: currentDate)!
     }
     
-    // For chart - fetches specific number of days for repository contributions
-    func getContributionsByRepository(days: Int = 21) {
+    // For chart - fetches repository contributions for one calendar month
+    func getContributionsByRepository(monthStart: Date = Calendar.current.startOfMonth(for: Date())) {
+        let calendar = Calendar.current
+        let month = calendar.startOfMonth(for: monthStart)
+        guard let nextMonth = calendar.date(byAdding: .month, value: 1, to: month) else { return }
+
+        chartMonth = month
         chartLoadingState = .loading
-        
-        let fromDate = getDateNDaysBeforeToday(n: days)
-        
-        client.getContributionsByRepository(from: fromDate, maxRepos: 10) { result in
+
+        let toDate = min(nextMonth.addingTimeInterval(-1), Date())
+
+        client.getContributionsByRepository(from: month, to: toDate, maxRepos: 10) { result in
             DispatchQueue.main.async {
                 switch result {
                 case .success(let repoContributions):
-                    self.contributionsByRepo = repoContributions
-                    self.chartLoadingState = .success
+                    self.contributionsByMonth[month] = repoContributions
+                    if self.chartMonth == month {
+                        self.chartErrorRequiresSignIn = false
+                        self.chartLoadingState = .success
+                    }
                     self.lastUpdateTime = Date()
                 case .failure(let error):
-                    self.contributionsByRepo = []
-                    self.chartLoadingState = .error(error.userMessage)
+                    if self.chartMonth == month {
+                        self.chartErrorRequiresSignIn = error.requiresSignIn
+                        self.chartLoadingState = .error(error.userMessage)
+                    }
+                    if error.requiresSignIn {
+                        self.contributionsByMonth = [:]
+                    }
                 }
             }
         }
+    }
+}
+
+extension Calendar {
+    func startOfMonth(for date: Date) -> Date {
+        self.date(from: dateComponents([.year, .month], from: date)) ?? startOfDay(for: date)
     }
 }

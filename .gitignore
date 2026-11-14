@@ -90,3 +90,9 @@ fastlane/test_output
 iOSInjectionProject/
 
 .DS_Store
+
+# Built app bundles
+*.app/
+
+# OpenCode local config
+.opencode/

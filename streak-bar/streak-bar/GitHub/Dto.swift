@@ -14,7 +14,7 @@ struct GraphQLResponse<T: Codable>: Codable {
 }
 
 struct GraphQLData<T: Codable>: Codable {
-    let user: T
+    let viewer: T
 }
 
 // MARK: - Contribution Calendar (menu bar heat-map)
@@ -40,6 +40,7 @@ struct ContributionsCollection: Codable {
 }
 
 struct UserCalendar: Codable {
+    let login: String
     let name: String?
     let avatarUrl: String
     let contributionsCollection: ContributionsCollection

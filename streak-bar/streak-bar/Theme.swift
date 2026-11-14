@@ -9,6 +9,13 @@ import Foundation
 import SwiftUI
 
 struct Theme {
+    static let defaultName = "standard"
+
+    // Falls back to the default theme if the saved name no longer exists
+    static func palette(named name: String) -> [ContributionLevel: Color] {
+        themes[name] ?? themes[defaultName] ?? [:]
+    }
+
     static let themes: [String: [ContributionLevel: Color]] = [
         "standard": [
             .FOURTH_QUARTILE: Color(hex: "#216e39"),
